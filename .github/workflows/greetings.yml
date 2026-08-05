@@ -1,0 +1,46 @@
+name: Community Welcome
+
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  welcome:
+    name: Welcome First-Time Contributors
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Greet new contributors
+        uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+          issue-message: |
+            👋 Thanks for opening your first issue!
+
+            We appreciate you taking the time to report a bug or suggest an improvement.
+
+            Before a maintainer reviews it:
+            - Make sure you've included enough detail to reproduce the issue.
+            - Check if a similar issue already exists.
+            - Be respectful and patient while waiting for a response.
+
+            Welcome to the project, and thanks for contributing.
+
+          pr-message: |
+            🎉 Thanks for your first pull request!
+
+            Your contribution has been submitted for review.
+
+            While you wait:
+            - Ensure all checks pass.
+            - Keep your branch up to date if requested.
+            - Respond to review comments when they arrive.
+
+            Thank you for helping improve this project. We appreciate your contribution.
