@@ -29,6 +29,8 @@ class LiveBuildStage:
     def run(self) -> Path:
         self.logger.stage("Stage 4: Build live ISO")
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        release_dir = self.repo_dir / "releasetogithub"
+        release_dir.mkdir(parents=True, exist_ok=True)
         source_live_dir = self.repo_dir / "live-build"
         if not source_live_dir.exists():
             raise RuntimeError("live-build directory not found")
@@ -72,6 +74,9 @@ class LiveBuildStage:
 
         iso_path = iso_files[0]
         destination = self.output_dir / iso_path.name
+        release_destination = release_dir / iso_path.name
         destination.write_bytes(iso_path.read_bytes())
+        release_destination.write_bytes(iso_path.read_bytes())
         self.logger.info(f"ISO created at {destination}")
+        self.logger.info(f"ISO staged for release at {release_destination}")
         return destination
