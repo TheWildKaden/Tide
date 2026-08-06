@@ -126,8 +126,8 @@ build_iso() {
   fi
 
   pushd "$LIVE_DIR" >/dev/null
-  lb config
-  lb build
+  run_root lb config
+  run_root lb build
   popd >/dev/null
   echo "[+] ISO build completed in $LIVE_DIR"
 }
