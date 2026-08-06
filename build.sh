@@ -125,11 +125,38 @@ build_iso() {
     exit 1
   fi
 
-  pushd "$LIVE_DIR" >/dev/null
-  run_root lb config
+  local temp_live="$(mktemp -d /tmp/tide-live-build-XXXXXX)"
+  trap 'run_root rm -rf "$temp_live"' EXIT
+
+  run_root mkdir -p "$temp_live"
+  run_root cp -a "$LIVE_DIR/auto" "$temp_live/auto"
+  if [ -d "$LIVE_DIR/local" ]; then
+    run_root cp -a "$LIVE_DIR/local" "$temp_live/local"
+  fi
+
+  pushd "$temp_live" >/dev/null
+  run_root lb config \
+    --mode debian \
+    --distribution "$CODENAME" \
+    --architectures "$ARCH" \
+    --mirror-bootstrap "$MIRROR" \
+    --mirror-chroot "$MIRROR" \
+    --bootstrap debootstrap \
+    --archive-areas "main contrib non-free" \
+    --binary-images iso-hybrid \
+    --bootappend-live "boot=live quiet splash" \
+    --compression xz
   run_root lb build
+
+  local iso_path
+  iso_path="$(run_root find "$temp_live" -maxdepth 2 -type f -name '*.iso' | head -n 1)"
+  if [ -z "$iso_path" ]; then
+    echo "[!] ISO build failed: no ISO found in $temp_live"
+    exit 1
+  fi
+  run_root cp "$iso_path" "$LIVE_DIR/$(basename "$iso_path")"
   popd >/dev/null
-  echo "[+] ISO build completed in $LIVE_DIR"
+  echo "[+] ISO build completed in $LIVE_DIR/$(basename "$iso_path")"
 }
 
 clean() {
