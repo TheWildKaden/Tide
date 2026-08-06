@@ -2,6 +2,17 @@
 
 Tide is a Debian-based OS scaffold for building a custom distribution.
 
+## Target stack
+
+- Base system: Debian
+- Build system: Python
+- ISO creation: live-build + debootstrap
+- System configuration: Python + YAML/TOML
+- Installer: Python + Qt6
+- Desktop apps: C++/Qt6 or Rust/GTK4
+- System services: Rust or C
+- Package management: APT + dpkg
+
 ## Getting started
 
 1. Install build dependencies:

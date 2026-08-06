@@ -1,6 +1,25 @@
+# Build outputs and staging areas
 rootfs/
 cache/
 live-build/cache/
+live-build/chroot/
+output/
+logs/
+.state/
+.tmp/
 *.log
 *.tar
 *.iso
+*.sha256
+*.img
+*.qcow2
+__pycache__/
+*.py[cod]
+
+# Editor and local environment
+.vscode/
+.idea/
+
+# Temporary bootstrap state
+/tmp/tide-builder/
+/tmp/tide-rootfs-*

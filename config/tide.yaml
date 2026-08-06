@@ -1,0 +1,29 @@
+os:
+  name: Tide OS
+  codename: bookworm
+  architecture: amd64
+
+mirror:
+  main: http://deb.debian.org/debian
+  security: http://security.debian.org/debian-security
+
+packages:
+  base:
+    - systemd
+    - sudo
+    - network-manager
+    - openssh-server
+    - ca-certificates
+
+branding:
+  name: Tide OS
+  wallpaper: /usr/share/backgrounds/tiide/default.png
+  theme: breeze
+
+custom:
+  scripts:
+    - scripts/hello.sh
+
+desktop:
+  enabled: true
+  environment: kde
