@@ -1,0 +1,6 @@
+rootfs/
+cache/
+live-build/cache/
+*.log
+*.tar
+*.iso
