@@ -61,7 +61,7 @@ jobs:
 
       - name: Upload ISO to release staging folder
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tide-iso-release-artifact
           path: ${{ steps.locate_iso.outputs.release_path }}
