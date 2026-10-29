@@ -1,0 +1,9 @@
+[General]
+ColorScheme=Tide
+LastUsedCustomAccentColor=94,234,212
+[KDE]
+LookAndFeelPackage=org.tide.desktop
+SingleClick=false
+WidgetStyle=Breeze
+[Icons]
+Theme=breeze-dark

@@ -1,0 +1,15 @@
+NAME="Tide OS"
+PRETTY_NAME="Tide OS 0.1.0-alpha.1 (Tidepool)"
+ID=tide
+ID_LIKE=debian
+VERSION_ID="0.1"
+VERSION="0.1.0-alpha.1 (Tidepool)"
+VERSION_CODENAME=tidepool
+DEBIAN_CODENAME=bookworm
+ANSI_COLOR="0;36"
+HOME_URL="https://github.com/Tide-OS/Tide"
+SUPPORT_URL="https://github.com/Tide-OS/Tide/issues"
+BUG_REPORT_URL="https://github.com/Tide-OS/Tide/issues"
+LOGO=tide-logo
+TIDE_FOUNDATION="Debian 12 (bookworm) via live-build"
+TIDE_CHANNEL="development"

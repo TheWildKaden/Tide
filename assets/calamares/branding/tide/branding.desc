@@ -1,0 +1,26 @@
+---
+componentName: tide
+shortProductName: Tide OS
+shortVersion: 0.1
+version: 0.1.0-alpha.1
+shortVersion: "0.1"
+version: "0.1.0-alpha.1"
+bootloaderEntryName: Tide OS
+productUrl: https://github.com/Tide-OS/Tide
+supportUrl: https://github.com/Tide-OS/Tide/issues
+releaseNotesUrl: https://github.com/Tide-OS/Tide/releases
+productName: Tide OS
+shortProductName: Tide OS
+strings:
+    welcome: "Welcome to Tide OS"
+    welcomeWithVersion: "Welcome to Tide OS {version}"
+    language: "Choose your language"
+    partition: "Where should Tide OS be installed?"
+    users: "Create your account"
+    summary: "Review the installation"
+    finished: "Tide OS is installed"
+images:
+    productLogo: "tide-logo.svg"
+    productIcon: "tide-logo.svg"
+    productWelcome: "tide-welcome.svg"
+slideshow: "show.qml"

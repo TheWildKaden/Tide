@@ -1,0 +1,17 @@
+{
+    "KPackageStructure": "Plasma/LookAndFeel",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Tide OS contributors"
+            }
+        ],
+        "Description": "Tide dark glass desktop defaults",
+        "Id": "org.tide.desktop",
+        "License": "MIT",
+        "Name": "Tide",
+        "Version": "0.1.0"
+    },
+    "Keywords": "Tide;dark;glass;",
+    "X-Plasma-API": "5.0"
+}

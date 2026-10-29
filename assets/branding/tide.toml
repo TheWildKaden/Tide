@@ -1,0 +1,19 @@
+# Tide OS package-manager configuration.
+# See docs/package-manager.md. Missing values use safe built-in defaults.
+
+[package]
+preferred_backend = "auto"
+assume_yes = false
+
+[apt]
+# Keep Debian's recommended-package behaviour for desktop workloads.
+install_recommends = true
+
+[flatpak]
+# Flatpak is an opt-in desktop application backend, not a system package manager.
+scope = "user"
+
+[repositories]
+# Tide-native repositories are not implemented yet. Enabling this flag does not
+# disable native signature checking; it is reported as unsupported by `tide doctor`.
+native_tide_repos = false

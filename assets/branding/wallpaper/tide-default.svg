@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2560" height="1440" viewBox="0 0 2560 1440" role="img" aria-label="Tide OS default wallpaper">
+  <defs>
+    <linearGradient id="abyss" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0" stop-color="#07111f"/>
+      <stop offset="0.48" stop-color="#0a1a2d"/>
+      <stop offset="1" stop-color="#040910"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.72" cy="0.28" r="0.62">
+      <stop offset="0" stop-color="#2dd4bf" stop-opacity=".34"/>
+      <stop offset=".42" stop-color="#0ea5e9" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#020617" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="crest1" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0ea5e9" stop-opacity="0"/>
+      <stop offset=".28" stop-color="#38bdf8" stop-opacity=".72"/>
+      <stop offset=".55" stop-color="#5eead4" stop-opacity=".92"/>
+      <stop offset=".82" stop-color="#99f6e4" stop-opacity=".58"/>
+      <stop offset="1" stop-color="#99f6e4" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="crest2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee" stop-opacity="0"/>
+      <stop offset=".5" stop-color="#67e8f9" stop-opacity=".35"/>
+      <stop offset="1" stop-color="#5eead4" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e2e8f0" stop-opacity=".11"/>
+      <stop offset=".5" stop-color="#e2e8f0" stop-opacity=".035"/>
+      <stop offset="1" stop-color="#e2e8f0" stop-opacity=".09"/>
+    </linearGradient>
+    <filter id="blur24"><feGaussianBlur stdDeviation="24"/></filter>
+    <filter id="blur8"><feGaussianBlur stdDeviation="8"/></filter>
+    <pattern id="grain" width="6" height="6" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r=".7" fill="#ffffff" opacity=".035"/>
+    </pattern>
+  </defs>
+  <rect width="2560" height="1440" fill="url(#abyss)"/>
+  <rect width="2560" height="1440" fill="url(#glow)"/>
+  <path d="M-80 1030C300 900 520 1170 920 1030s620-330 1040-180 520 250 760 140v520H-80z" fill="#0b2239" opacity=".75" filter="url(#blur8)"/>
+  <path d="M-80 1120C310 980 570 1240 980 1100s680-300 1080-140 420 190 580 120v440H-80z" fill="#071726" opacity=".9"/>
+  <path d="M-40 980C240 770 540 760 830 930s520 210 800 60 470-330 780-250 260 70 260 70" fill="none" stroke="url(#crest1)" stroke-width="7" stroke-linecap="round" opacity=".75"/>
+  <path d="M-40 1050C250 860 540 850 830 1010s520 200 800 55 470-320 780-240 260 70 260 70" fill="none" stroke="url(#crest2)" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+  <path d="M-80 1260C380 1080 650 1360 1080 1210s720-260 1120-120 440 170 620 90v300H-80z" fill="#0e2f46" opacity=".5"/>
+  <g opacity=".32">
+    <circle cx="2010" cy="285" r="150" fill="none" stroke="#99f6e4" stroke-width="1.5"/>
+    <circle cx="2010" cy="285" r="102" fill="none" stroke="#5eead4" stroke-width="1"/>
+    <circle cx="2010" cy="285" r="228" fill="none" stroke="#38bdf8" stroke-width=".8"/>
+  </g>
+  <circle cx="2010" cy="285" r="84" fill="#5eead4" opacity=".12" filter="url(#blur24)"/>
+  <rect x="192" y="170" width="540" height="2" fill="url(#crest1)" opacity=".5"/>
+  <text x="192" y="285" fill="#e2e8f0" font-family="'Inter','DejaVu Sans',sans-serif" font-size="128" font-weight="200" letter-spacing="34">TIDE</text>
+  <text x="196" y="340" fill="#5eead4" font-family="'Inter','DejaVu Sans',sans-serif" font-size="24" font-weight="400" letter-spacing="12" opacity=".85">OS · TIDEPOOL</text>
+  <rect width="2560" height="1440" fill="url(#grain)"/>
+</svg>

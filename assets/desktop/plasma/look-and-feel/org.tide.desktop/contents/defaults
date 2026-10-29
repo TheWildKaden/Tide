@@ -1,0 +1,13 @@
+[kdeglobals][General]
+ColorScheme=Tide
+
+[kdeglobals][Icons]
+Theme=breeze-dark
+
+[kdeglobals][KDE]
+LookAndFeelPackage=org.tide.desktop
+SingleClick=false
+WidgetStyle=Breeze
+
+[Wallpaper]
+Image=/usr/share/backgrounds/tide/tide-default.svg
