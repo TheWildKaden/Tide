@@ -33,6 +33,17 @@ pub trait CommandRunner {
         env: &[(&str, &str)],
     ) -> Result<CommandOutput>;
 
+    /// Run a command that changes system state, elevating via `sudo` when needed.
+    /// The default implementation does not elevate; `SystemRunner` overrides it.
+    fn run_privileged(
+        &self,
+        program: &str,
+        args: &[String],
+        env: &[(&str, &str)],
+    ) -> Result<CommandOutput> {
+        self.run(program, args, env)
+    }
+
     /// Whether the current process can perform privileged package operations.
     fn is_privileged(&self) -> bool;
 }
@@ -111,6 +122,15 @@ impl CommandRunner for SystemRunner {
         env: &[(&str, &str)],
     ) -> Result<CommandOutput> {
         self.exec(program, args, env)
+    }
+
+    fn run_privileged(
+        &self,
+        program: &str,
+        args: &[String],
+        env: &[(&str, &str)],
+    ) -> Result<CommandOutput> {
+        SystemRunner::run_privileged(self, program, args, env)
     }
 
     fn is_privileged(&self) -> bool {
