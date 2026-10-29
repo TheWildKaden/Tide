@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Iterable, List, Optional
 
 from builder.config import TideConfig
+from builder.exec import find_command
 from builder.paths import BuildPaths
 
 STAGE_COMMANDS = {
@@ -31,7 +32,7 @@ class Check:
 
 
 def _command_version(command: str) -> Optional[str]:
-    path = shutil.which(command)
+    path = find_command(command)
     if not path:
         return None
     for args in (["--version"], ["version"]):
@@ -143,7 +144,7 @@ def doctor(
 
 
 def require_stage_dependencies(stage: str) -> None:
-    missing = [command for command in STAGE_COMMANDS.get(stage, []) if not shutil.which(command)]
+    missing = [command for command in STAGE_COMMANDS.get(stage, []) if find_command(command) is None]
     if missing:
         raise RuntimeError(
             "missing required commands: "

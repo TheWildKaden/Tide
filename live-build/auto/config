@@ -1,15 +1,22 @@
 #!/bin/sh
+# Tide live-build configuration.
+#
+# The Python build system normally passes these values explicitly to `lb config`.
+# This file keeps `lb` usable directly for debugging and avoids Debian-specific
+# product strings in generated media.
 set -e
 
 export LB_MODE="debian"
-export LB_DISTRIBUTION="bookworm"
-export LB_ARCHITECTURE="amd64"
-export LB_MIRROR_BOOTSTRAP="http://deb.debian.org/debian"
-export LB_MIRROR_CHROOT="http://deb.debian.org/debian"
-export LB_MIRROR_CHROOT_SECURITY="http://security.debian.org/debian-security"
-export LB_ARCHIVE_AREAS="main contrib non-free non-free-firmware"
-export LB_PACKAGES="openssh-server sudo locales net-tools iproute2 ca-certificates"
-export LB_COMPRESSION="xz"
-export LB_BOOT_APPEND="boot=live quiet splash"
+export LB_DISTRIBUTION="${TIDE_CODENAME:-bookworm}"
+export LB_ARCHITECTURE="${TIDE_ARCH:-amd64}"
+export LB_MIRROR_BOOTSTRAP="${TIDE_MIRROR:-http://deb.debian.org/debian}"
+export LB_MIRROR_CHROOT="${TIDE_MIRROR:-http://deb.debian.org/debian}"
+export LB_MIRROR_CHROOT_SECURITY="${TIDE_MIRROR_SECURITY:-http://security.debian.org/debian-security}"
+export LB_ARCHIVE_AREAS="${TIDE_AREAS:-main contrib non-free non-free-firmware}"
+export LB_COMPRESSION="${TIDE_COMPRESSION:-xz}"
+export LB_BOOT_APPEND="${TIDE_BOOT_APPEND:-boot=live quiet splash}"
+export LB_ISO_APPLICATION="Tide OS"
+export LB_ISO_PUBLISHER="Tide OS project; https://github.com/Tide-OS/Tide"
+export LB_ISO_VOLUME="Tide OS ${TIDE_VERSION:-0.1.0-alpha.1}"
 
 exec lb config noauto "$@"

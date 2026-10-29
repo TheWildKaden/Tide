@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    name: Rust (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust components
+        run: |
+          rustup toolchain install stable --component rustfmt clippy --profile minimal
+          rustup default stable
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Tests
+        run: cargo test --workspace
+      - name: Release build
+        run: cargo build --release --workspace --bins
+
+  python:
+    name: Build system and assets
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Python tests
+        run: python -m unittest discover -s tests -v
+      - name: Shell scripts
+        run: |
+          for script in build.sh rootfs-config.sh scripts/*.sh assets/firstboot/*.sh; do
+            bash -n "$script"
+          done
+          shellcheck build.sh rootfs-config.sh scripts/*.sh assets/firstboot/*.sh
+      - name: Configuration and assets
+        run: |
+          python - <<'PY'
+          import json, tomllib, xml.etree.ElementTree as ET
+          from pathlib import Path
+          import yaml
+          with Path("config/tide.yaml").open(encoding="utf-8") as handle:
+              yaml.safe_load(handle)
+          for file in Path("assets/calamares").rglob("*"):
+              if file.suffix in {".conf", ".desc"}:
+                  with file.open(encoding="utf-8") as handle:
+                      yaml.safe_load(handle)
+          for file in Path("assets").rglob("*.svg"):
+              ET.parse(file)
+          json.loads(Path("assets/desktop/plasma/look-and-feel/org.tide.desktop/metadata.json").read_text())
+          tomllib.loads(Path("Cargo.toml").read_text())
+          print("configuration and assets parse successfully")
+          PY
+      - name: Build-system doctor (expected failure without live-build)
+        run: ./build.sh doctor || test $? -eq 1

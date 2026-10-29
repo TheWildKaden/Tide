@@ -1,0 +1,36 @@
+# Path-based labels for .github/workflows/label.yml
+"area/build":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "builder/**"
+          - "build.sh"
+          - "config/**"
+          - "live-build/**"
+
+"area/package-manager":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "crates/**"
+
+"area/desktop":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "assets/desktop/**"
+          - "assets/branding/**"
+
+"area/installer":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "assets/calamares/**"
+
+"area/docs":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "*.md"
+          - "docs/**"
+
+"area/ci":
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+          - "scripts/**"

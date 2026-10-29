@@ -64,7 +64,22 @@ def run(
 
 
 def require_commands(commands: Iterable[str]) -> List[str]:
-    return [command for command in commands if shutil.which(command) is None]
+    return [command for command in commands if find_command(command) is None]
+
+
+def find_command(command: str) -> Optional[str]:
+    """Find a command on PATH, including the standard rustup install location."""
+    found = shutil.which(command)
+    if found:
+        return found
+    candidates = [Path.home() / ".cargo" / "bin" / command]
+    sudo_user = os.environ.get("SUDO_USER")
+    if sudo_user:
+        candidates.append(Path("/home") / sudo_user / ".cargo" / "bin" / command)
+    for candidate in candidates:
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            return str(candidate)
+    return None
 
 
 def chroot_run(

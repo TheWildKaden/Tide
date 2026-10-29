@@ -7,7 +7,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from builder.exec import run
+from builder.exec import find_command, run
 from builder.logger import BuildLogger
 
 
@@ -25,7 +25,7 @@ class RustToolsStage:
 
     def ensure_built(self) -> Path:
         self.logger.stage("Building Tide Rust tools")
-        cargo = shutil.which("cargo")
+        cargo = find_command("cargo")
         if cargo is None and not self.dry_run:
             raise RustToolsError(
                 "cargo is required to build the Tide package manager and tidectl; "

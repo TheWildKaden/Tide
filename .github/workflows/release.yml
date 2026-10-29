@@ -1,4 +1,4 @@
-name: Build and Publish Release ISO
+name: Build and publish release ISO
 
 on:
   release:
@@ -7,62 +7,56 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
 jobs:
   build-release:
-    name: Build ISO and upload release asset
-    runs-on: ubuntu-latest
-
+    name: Build ISO and attach release assets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h
       - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y debootstrap live-build rsync
-
-      - name: Make scripts executable
-        run: |
-          chmod +x build.sh rootfs-config.sh
-
-      - name: Bootstrap Debian rootfs
-        run: |
-          ./build.sh bootstrap
-
-      - name: Configure rootfs
-        run: |
-          ./build.sh configure
-
-      - name: Build ISO
-        run: |
-          ./build.sh build-iso
-
-      - name: Locate generated ISO
-        id: locate_iso
-        run: |
-          iso=$(find output releasetogithub -type f -name '*.iso' | head -n 1)
-          if [ -z "$iso" ]; then
-            echo 'No ISO file found in output or releasetogithub' >&2
-            exit 1
-          fi
-          mkdir -p releasetogithub
-          cp "$iso" releasetogithub/$(basename "$iso")
-          echo "iso_path=$iso" >> $GITHUB_OUTPUT
-          echo "release_path=releasetogithub/$(basename "$iso")" >> $GITHUB_OUTPUT
-
-      - name: Upload release ISO asset
-        if: success()
-        uses: actions/upload-release-asset@v3
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ steps.locate_iso.outputs.iso_path }}
-          asset_name: ${{ github.event.release.tag_name }}.iso
-          asset_content_type: application/octet-stream
-
-      - name: Upload ISO to release staging folder
-        if: always()
+        run: ./scripts/install-dev-deps.sh
+      - name: Environment check
+        run: ./build.sh doctor
+      - name: Build ISO and manifest
+        run: ./build.sh all
+      - name: Verify checksums
+        run: ./build.sh verify
+      - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tide-iso-release-artifact
-          path: ${{ steps.locate_iso.outputs.release_path }}
+          name: tide-release-${{ github.event.release.tag_name }}
+          path: |
+            output/*.iso
+            output/*.sha256
+            output/SHA256SUMS
+            output/manifests/*.json
           if-no-files-found: error
+      - name: Attach assets to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          gh release upload "$TAG" \
+            output/*.iso \
+            output/*.sha256 \
+            output/SHA256SUMS \
+            output/manifests/*.json \
+            --clobber
+      - name: Record validation limits
+        run: |
+          {
+            echo "## Tide release build"
+            echo ""
+            echo "Checksums and the release manifest were generated. Release assets are **not** signed yet."
+            echo "The ISO was not booted by this workflow. Validate boot, installer, and hardware support separately."
+          } >> "$GITHUB_STEP_SUMMARY"
