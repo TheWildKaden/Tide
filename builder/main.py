@@ -1,148 +1,259 @@
+"""Tide OS build orchestrator.
+
+Primary command:
+    ./build.sh all
+
+Stages:
+    doctor      environment and dependency checks
+    bootstrap   debootstrap a Debian foundation
+    configure   apply Tide identity, packages, users, and defaults
+    build-iso   generate a live ISO with Debian live-build
+    manifest    write/refresh checksums and a release manifest
+    verify      verify generated artifacts
+    clean       remove local build artifacts
+"""
+
 from __future__ import annotations
 
 import argparse
-import hashlib
-import os
-import shutil
+import json
 import sys
-import time
+import traceback
 from pathlib import Path
 from typing import Optional
 
 from builder.bootstrap import BootstrapStage
+from builder.branding import BrandingStage
 from builder.chroot import ChrootStage
 from builder.cleanup import CleanupStage
-from builder.config import load_config, write_config_snapshot
+from builder.config import ConfigError, load_config, write_config_snapshot
+from builder.environment import checks_as_json, doctor, require_stage_dependencies
 from builder.livebuild import LiveBuildStage
 from builder.logger import BuildLogger
-from builder.packages import PackagePlan
+from builder.manifest import generate_manifest, verify
+from builder.paths import BuildPaths
+
+REPO = Path(__file__).resolve().parents[1]
 
 
 class TideBuilder:
-    def __init__(self, repo_dir: Path) -> None:
-        self.repo_dir = repo_dir.resolve()
-        self.workdir = Path("/tmp/tide-builder")
-        self.workdir.mkdir(parents=True, exist_ok=True)
-        self.state_dir = self.workdir / ".state"
-        self.logs_dir = self.workdir / "logs"
-        self.output_dir = self.repo_dir / "output"
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.logger = BuildLogger(self.logs_dir, "tide-build")
-        self.config = load_config(self.repo_dir / "config" / "tide.yaml")
-        self.state_dir.mkdir(parents=True, exist_ok=True)
-
-    def validate_environment(self) -> None:
-        self.logger.stage("Stage 1: Environment checks")
-        self.repo_dir.joinpath("rootfs").mkdir(parents=True, exist_ok=True)
-        self.repo_dir.joinpath("output").mkdir(parents=True, exist_ok=True)
-        if os.geteuid() != 0:
-            self.logger.warning("Running without root privileges; some steps may fail")
-        required_commands = ["debootstrap", "lb", "grub-mkrescue", "rsync", "mount", "umount"]
-        missing = [cmd for cmd in required_commands if not shutil.which(cmd)]
-        if missing:
-            raise RuntimeError(f"Missing required commands: {', '.join(missing)}")
-
-        mount_info = shutil.which("mount")
-        if mount_info:
-            self.logger.info("Environment checks passed")
-
-        if self.workdir.exists() and self.workdir.is_dir():
-            self._check_restricted_mounts()
-
-    def _check_restricted_mounts(self) -> None:
-        mount_output = shutil.which("mount")
-        if not mount_output:
-            return
-        try:
-            import subprocess
-            result = subprocess.run(["mount"], text=True, capture_output=True, check=True)
-            if "nodev" in result.stdout and "/workspaces" in result.stdout:
-                self.logger.warning("Workspace appears mounted with nodev restrictions; build may fail")
-        except Exception as exc:
-            self.logger.warning(f"Unable to inspect mount table: {exc}")
-
-    def _write_state(self, name: str) -> None:
-        state_path = self.state_dir / f"{name}.state"
-        state_path.write_text(str(time.time()), encoding="utf-8")
-
-    def _state_exists(self, name: str) -> bool:
-        return (self.state_dir / f"{name}.state").exists()
-
-    def run(self) -> Path:
-        self.validate_environment()
-        write_config_snapshot(self.config, self.state_dir / "config.json")
-
-        if self._state_exists("bootstrap"):
-            self.logger.info("Bootstrap stage already completed; skipping")
-        else:
-            BootstrapStage(self.config, self.logger, self.workdir).run()
-            self._write_state("bootstrap")
-
-        if self._state_exists("chroot"):
-            self.logger.info("Chroot stage already completed; skipping")
-        else:
-            ChrootStage(self.config, self.logger, self.workdir).run()
-            self._write_state("chroot")
-
-        if self._state_exists("livebuild"):
-            self.logger.info("Live-build stage already completed; skipping")
-        else:
-            iso_path = LiveBuildStage(self.config, self.logger, self.workdir, self.repo_dir).run()
-            self._write_state("livebuild")
-            self._write_checksum(iso_path)
-
-        self.logger.stage("Stage 5: Validation")
-        iso_path = self.output_dir / self._latest_iso_name()
-        if not iso_path.exists():
-            raise RuntimeError("ISO was not produced")
-        self._write_build_report(iso_path)
-        self.logger.info("Build completed successfully")
-        return iso_path
-
-    def _latest_iso_name(self) -> str:
-        isos = sorted(self.output_dir.glob("*.iso"))
-        if not isos:
-            raise RuntimeError("No ISO available in output directory")
-        return isos[-1].name
-
-    def _write_checksum(self, iso_path: Path) -> None:
-        sha256 = hashlib.sha256(iso_path.read_bytes()).hexdigest()
-        checksum_path = self.output_dir / f"{iso_path.stem}.sha256"
-        checksum_path.write_text(f"{sha256}  {iso_path.name}\n", encoding="utf-8")
-
-    def _write_build_report(self, iso_path: Path) -> None:
-        report_path = self.output_dir / "build-report.txt"
-        report_path.write_text(
-            f"Tide OS build report\n"
-            f"Name: {self.config.name}\n"
-            f"Codename: {self.config.codename}\n"
-            f"Architecture: {self.config.architecture}\n"
-            f"ISO: {iso_path.name}\n",
-            encoding="utf-8",
-        )
+    def __init__(self, args: argparse.Namespace) -> None:
+        self.args = args
+        self.config = load_config(args.config)
+        self.paths = BuildPaths.resolve(REPO, args.build_dir)
+        self.paths.ensure()
+        self.logger = BuildLogger(self.paths.logs, verbose=args.verbose)
+        self.profile = self.config.desktop_profile(args.desktop)
+        write_config_snapshot(self.config, self.paths.state / "config.json")
 
     def close(self) -> None:
         self.logger.close()
 
+    def _require(self, stage: str) -> None:
+        require_stage_dependencies(stage)
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Build Tide OS")
-    parser.add_argument("--config", type=Path, default=Path(__file__).resolve().parents[1] / "config" / "tide.yaml")
-    parser.add_argument("--clean", action="store_true", help="Remove previous build artifacts before starting")
-    args = parser.parse_args()
+    def bootstrap(self) -> None:
+        self._require("bootstrap")
+        BootstrapStage(
+            self.config,
+            self.logger,
+            self.paths,
+            self.profile,
+            force=self.args.force,
+            dry_run=self.args.dry_run,
+        ).run()
 
-    repo_dir = Path(__file__).resolve().parents[1]
-    builder = TideBuilder(repo_dir)
-    try:
-        if args.clean:
-            CleanupStage(builder.logger, builder.workdir).clean(keep_output=False)
-        builder.run()
+    def configure(self) -> None:
+        self._require("configure")
+        ChrootStage(
+            self.config,
+            self.logger,
+            self.paths,
+            self.profile,
+            dry_run=self.args.dry_run,
+        ).run()
+
+    def build_iso(self) -> Path:
+        self._require("iso")
+        if self.paths.is_done("configure"):
+            branding = BrandingStage(self.config, self.paths.repo, self.logger)
+            branding.validate()
+        return LiveBuildStage(
+            self.config,
+            self.logger,
+            self.paths,
+            self.profile,
+            dry_run=self.args.dry_run,
+        ).run()
+
+    def manifest(self, iso: Optional[Path] = None) -> dict:
+        iso = iso or self._latest_iso()
+        manifest = generate_manifest(self.config, self.paths, iso, profile=self.profile)
+        self.logger.info(f"Manifest: {self.paths.manifests / (iso.stem + '.manifest.json')}")
+        self.logger.info(f"Checksum: {iso}.sha256")
+        return manifest
+
+    def _latest_iso(self) -> Path:
+        isos = sorted(
+            self.paths.output.glob("*.iso"),
+            key=lambda path: path.stat().st_mtime,
+            reverse=True,
+        )
+        if not isos:
+            raise RuntimeError(f"no ISO found in {self.paths.output}; run 'build.sh build-iso' first")
+        return isos[0]
+
+    def all(self) -> None:
+        self.logger.stage("Tide OS build")
+        self.logger.info(
+            f"{self.config.name} {self.config.version} | Debian {self.config.codename} "
+            f"| {self.config.architecture} | profile={self.profile or 'none'}"
+        )
+        for check in doctor(self.config, self.paths):
+            if check.level == "error":
+                raise RuntimeError(f"{check.area}: {check.message} ({check.remediation or ''})".strip())
+            if check.level in {"warning", "info"}:
+                self.logger.info(f"{check.level}: {check.area}: {check.message}")
+
+        if self.args.dry_run or not self.paths.is_done("bootstrap") or self.args.force:
+            self.bootstrap()
+        else:
+            self.logger.info("Bootstrap stage already complete; skipping (use --force to rebuild)")
+        if self.args.dry_run or not self.paths.is_done("configure") or self.args.force:
+            self.configure()
+        else:
+            self.logger.info("Configure stage already complete; skipping (use --force to rebuild)")
+
+        iso = self.build_iso()
+        if self.args.dry_run:
+            self.logger.info("Dry run complete: no ISO was generated and no manifest was written")
+            return
+        manifest = self.manifest(iso)
+        self._print_summary(iso, manifest)
+
+    def _print_summary(self, iso: Path, manifest: dict) -> None:
+        self.logger.stage("Build summary")
+        self.logger.info(f"ISO:       {iso}")
+        self.logger.info(f"Size:      {iso.stat().st_size / 1024**3:.2f} GiB")
+        self.logger.info(f"SHA-256:   {manifest['artifacts'][0]['sha256']}")
+        self.logger.info(f"Manifest:  {self.paths.manifests / (iso.stem + '.manifest.json')}")
+        self.logger.info(f"Log:       {self.logger.path}")
+        self.logger.info(
+            "Validation: ISO generation only. Boot, installer, and hardware behaviour "
+            "have NOT been tested by this command."
+        )
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="build.sh",
+        description="Build Tide OS images from a Debian foundation.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="The environment cannot prove that an ISO boots. Validate images in a VM or on hardware.",
+    )
+    parser.add_argument("--config", type=Path, default=REPO / "config/tide.yaml", help="configuration file")
+    parser.add_argument(
+        "--build-dir",
+        type=Path,
+        default=None,
+        help="working directory (default: $TIDE_BUILD_DIR or .tide-build)",
+    )
+    parser.add_argument("--desktop", choices=["kde", "xfce", "minimal", "none"], default=None)
+    parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--dry-run", action="store_true", help="print commands without changing the system")
+
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    doctor_parser = subparsers.add_parser("doctor", help="check the build environment")
+    doctor_parser.add_argument("--json", action="store_true")
+    doctor_parser.add_argument("--stage", choices=["bootstrap", "configure", "iso"], default=None)
+
+    bootstrap_parser = subparsers.add_parser("bootstrap", help="create the Debian root filesystem")
+    bootstrap_parser.add_argument("--force", action="store_true", help="replace an existing rootfs")
+
+    subparsers.add_parser("configure", help="apply Tide configuration in the chroot")
+
+    iso_parser = subparsers.add_parser("build-iso", help="build a live ISO")
+    iso_parser.add_argument("--force", action="store_true", help="accepted for consistency; ISO always rebuilds")
+
+    all_parser = subparsers.add_parser("all", help="bootstrap, configure, build ISO, and write a manifest")
+    all_parser.add_argument("--force", action="store_true", help="rebuild bootstrap and configure stages")
+
+    clean_parser = subparsers.add_parser("clean", help="remove build artifacts")
+    clean_parser.add_argument("--keep-output", action="store_true", help="keep generated images")
+    clean_parser.add_argument("--force", action="store_true", help="allow removing an external build directory")
+
+    manifest_parser = subparsers.add_parser("manifest", help="write checksums and a release manifest")
+    manifest_parser.add_argument("--iso", type=Path, default=None)
+
+    verify_parser = subparsers.add_parser("verify", help="verify generated artifacts")
+    verify_parser.add_argument("--checksum", type=Path, default=None)
+
+    subparsers.add_parser("version", help="print the Tide build-system version")
+    return parser
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if args.command == "version":
+        version_file = REPO / "VERSION"
+        print(version_file.read_text(encoding="utf-8").strip() if version_file.exists() else "unknown")
         return 0
-    except Exception as exc:
-        builder.logger.error(f"Build failed: {exc}")
+
+    builder: Optional[TideBuilder] = None
+    try:
+        if args.command == "doctor":
+            config = load_config(args.config)
+            paths = BuildPaths.resolve(REPO, args.build_dir)
+            checks = doctor(config, paths, args.stage)
+            if args.json:
+                print(checks_as_json(checks))
+            else:
+                print(f"Tide build doctor: {config.name} {config.version}")
+                for check in checks:
+                    print(f"[{check.level:<7}] {check.area:<12} {check.message}")
+                    if check.remediation:
+                        print(f"          fix: {check.remediation}")
+            return 1 if any(check.level == "error" for check in checks) else 0
+
+        builder = TideBuilder(args)
+        if args.command == "bootstrap":
+            builder.bootstrap()
+        elif args.command == "configure":
+            builder.configure()
+        elif args.command == "build-iso":
+            iso = builder.build_iso()
+            if not args.dry_run:
+                builder.manifest(iso)
+        elif args.command == "all":
+            builder.all()
+        elif args.command == "manifest":
+            builder.manifest(args.iso)
+        elif args.command == "verify":
+            errors = verify(builder.paths, args.checksum)
+            if errors:
+                for error in errors:
+                    builder.logger.error(error)
+                return 1
+            builder.logger.info("All checksums verified")
+        elif args.command == "clean":
+            CleanupStage(builder.logger, builder.paths).clean(args.keep_output, args.force)
+        return 0
+    except (ConfigError, RuntimeError, FileNotFoundError, ValueError) as exc:
+        if builder:
+            builder.logger.error(f"Build failed: {exc}")
+            if args.verbose:
+                builder.logger.debug(traceback.format_exc())
+        else:
+            print(f"build.sh: {exc}", file=sys.stderr)
         return 1
+    except KeyboardInterrupt:
+        print("\nInterrupted.", file=sys.stderr)
+        return 130
     finally:
-        builder.close()
+        if builder:
+            builder.close()
 
 
 if __name__ == "__main__":
