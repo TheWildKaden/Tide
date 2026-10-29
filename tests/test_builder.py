@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 from builder.branding import BrandingStage
@@ -18,6 +19,20 @@ from builder.packages import PackagePlan
 from builder.paths import BuildPaths
 
 REPO = Path(__file__).resolve().parents[1]
+
+
+def isolated_paths(temp: str) -> BuildPaths:
+    """Build paths entirely under a temporary directory.
+
+    `BuildPaths.output` normally points at the repository-level `output/`
+    directory, so tests must override it to avoid touching real artifacts.
+    """
+    paths = replace(
+        BuildPaths.resolve(REPO, Path(temp) / "build"),
+        output=Path(temp) / "output",
+    )
+    paths.ensure()
+    return paths
 
 
 class ConfigTests(unittest.TestCase):
@@ -100,8 +115,7 @@ class ManifestTests(unittest.TestCase):
     def test_manifest_and_checksum_round_trip(self) -> None:
         config = load_config(REPO / "config/tide.yaml")
         with tempfile.TemporaryDirectory() as temp:
-            paths = BuildPaths.resolve(REPO, Path(temp) / "build")
-            paths.ensure()
+            paths = isolated_paths(temp)
             iso = paths.output / "tide-test.iso"
             iso.write_bytes(b"not a real iso, only an artifact for testing\n")
             manifest = generate_manifest(config, paths, iso, profile="none")
@@ -158,12 +172,12 @@ class ExecTests(unittest.TestCase):
 
     def test_cleanup_dry_run_keeps_files(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
-            paths = BuildPaths.resolve(REPO, Path(temp) / "build")
-            paths.ensure()
+            paths = isolated_paths(temp)
             marker = paths.work / "keep-me"
             marker.write_text("x", encoding="utf-8")
             logger = BuildLogger(Path(temp) / "logs", "cleanup-test")
-            CleanupStage(logger, paths, dry_run=True).clean()
+            # keep_output avoids touching the repository-level output directory.
+            CleanupStage(logger, paths, dry_run=True).clean(keep_output=True)
             self.assertTrue(marker.exists())
             logger.close()
 
