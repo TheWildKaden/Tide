@@ -70,7 +70,11 @@ impl PackageBackend for DnfBackend {
     fn version(&self, runner: &dyn CommandRunner) -> Option<String> {
         let program = self.program(runner);
         let output = runner.run(program, &["--version".to_string()], &[]).ok()?;
-        output.stdout.lines().next().map(|line| line.trim().to_string())
+        output
+            .stdout
+            .lines()
+            .next()
+            .map(|line| line.trim().to_string())
     }
 
     fn notes(&self) -> Vec<String> {
@@ -125,7 +129,11 @@ impl PackageBackend for DnfBackend {
     ) -> Result<OperationReport> {
         let program = self.program(runner);
         validate_packages(packages)?;
-        let mut args = vec!["install".to_string(), "--assumeyes".to_string(), "--".to_string()];
+        let mut args = vec![
+            "install".to_string(),
+            "--assumeyes".to_string(),
+            "--".to_string(),
+        ];
         args.extend(packages.iter().cloned());
         if options.dry_run {
             return Ok(OperationReport::planned(
@@ -148,7 +156,11 @@ impl PackageBackend for DnfBackend {
     ) -> Result<OperationReport> {
         let program = self.program(runner);
         validate_packages(packages)?;
-        let mut args = vec!["remove".to_string(), "--assumeyes".to_string(), "--".to_string()];
+        let mut args = vec![
+            "remove".to_string(),
+            "--assumeyes".to_string(),
+            "--".to_string(),
+        ];
         args.extend(packages.iter().cloned());
         if options.dry_run {
             return Ok(OperationReport::planned(
@@ -259,8 +271,16 @@ fn parse_tabbed(output: &str, backend: &str) -> Vec<PackageSummary> {
             Some(PackageSummary {
                 backend: backend.to_string(),
                 name: name.to_string(),
-                version: parts.next().map(str::trim).filter(|v| !v.is_empty()).map(str::to_string),
-                description: parts.next().map(str::trim).filter(|v| !v.is_empty()).map(str::to_string),
+                version: parts
+                    .next()
+                    .map(str::trim)
+                    .filter(|v| !v.is_empty())
+                    .map(str::to_string),
+                description: parts
+                    .next()
+                    .map(str::trim)
+                    .filter(|v| !v.is_empty())
+                    .map(str::to_string),
                 installed: None,
             })
         })
@@ -315,7 +335,10 @@ pub fn parse_yum_repos(repo_dir: &Path) -> Vec<RepoEntry> {
                 entries.push(RepoEntry {
                     id: id.clone(),
                     manager: "dnf5".to_string(),
-                    uri: fields.get("baseurl").cloned().or_else(|| fields.get("metalink").cloned()),
+                    uri: fields
+                        .get("baseurl")
+                        .cloned()
+                        .or_else(|| fields.get("metalink").cloned()),
                     suites: Vec::new(),
                     components: Vec::new(),
                     enabled,

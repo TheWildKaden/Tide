@@ -162,8 +162,8 @@ impl PackageBackend for AppImageBackend {
                 });
             }
             let source_path = PathBuf::from(source);
-            let metadata = fs::metadata(&source_path)
-                .map_err(|error| TideError::io(&source_path, error))?;
+            let metadata =
+                fs::metadata(&source_path).map_err(|error| TideError::io(&source_path, error))?;
             if !metadata.is_file() {
                 return Err(TideError::InvalidInput {
                     kind: "AppImage path",
@@ -200,7 +200,9 @@ impl PackageBackend for AppImageBackend {
                     .map_err(|error| TideError::io(&destination, error))?;
             }
             set_executable(&destination)?;
-            let desktop = self.desktop_dir.join(format!("tide-appimage-{filename}.desktop"));
+            let desktop = self
+                .desktop_dir
+                .join(format!("tide-appimage-{filename}.desktop"));
             write_desktop_entry(&desktop, filename, &destination)?;
             details.push(format!("installed {}", destination.display()));
         }
@@ -243,7 +245,9 @@ impl PackageBackend for AppImageBackend {
                 .and_then(|value| value.to_str())
                 .unwrap_or_default()
                 .to_string();
-            let desktop = self.desktop_dir.join(format!("tide-appimage-{filename}.desktop"));
+            let desktop = self
+                .desktop_dir
+                .join(format!("tide-appimage-{filename}.desktop"));
             if options.dry_run {
                 details.push(format!("would remove {}", path.display()));
                 continue;
@@ -327,9 +331,9 @@ fn validate_app_name(name: &str) -> Result<()> {
         || name.starts_with('-')
         || name.contains('/')
         || name.contains('\\')
-        || !name
-            .chars()
-            .all(|character| character.is_ascii_alphanumeric() || matches!(character, '.' | '_' | '-' | '+'))
+        || !name.chars().all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '.' | '_' | '-' | '+')
+        })
     {
         return Err(TideError::InvalidInput {
             kind: "AppImage name",
@@ -397,10 +401,8 @@ mod tests {
     use super::*;
 
     fn dirs(name: &str) -> (PathBuf, PathBuf) {
-        let base = std::env::temp_dir().join(format!(
-            "tide-appimage-{name}-{}",
-            std::process::id()
-        ));
+        let base =
+            std::env::temp_dir().join(format!("tide-appimage-{name}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&base);
         (base.join("apps"), base.join("applications"))
     }
@@ -422,10 +424,16 @@ mod tests {
         fs::write(&source, b"\x7fELFfake").unwrap();
         let runner = crate::exec::MockRunner::default();
         backend
-            .install(&runner, &[source.display().to_string()], &RunOptions::default())
+            .install(
+                &runner,
+                &[source.display().to_string()],
+                &RunOptions::default(),
+            )
             .unwrap();
         assert!(apps.join("Example.AppImage").exists());
-        assert!(desktop.join("tide-appimage-Example.AppImage.desktop").exists());
+        assert!(desktop
+            .join("tide-appimage-Example.AppImage.desktop")
+            .exists());
         let listed = backend.list_installed(&runner).unwrap();
         assert_eq!(listed[0].name, "Example");
         backend
@@ -445,7 +453,11 @@ mod tests {
         fs::write(&source, b"#!/bin/sh\necho nope\n").unwrap();
         let runner = crate::exec::MockRunner::default();
         assert!(backend
-            .install(&runner, &[source.display().to_string()], &RunOptions::default())
+            .install(
+                &runner,
+                &[source.display().to_string()],
+                &RunOptions::default()
+            )
             .is_err());
         let _ = fs::remove_dir_all(source_dir);
     }

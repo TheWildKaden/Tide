@@ -26,12 +26,7 @@ pub trait CommandRunner {
 
     /// Run a program with an argument vector. `env` entries are added to a
     /// sanitised environment; the process is never passed through a shell.
-    fn run(
-        &self,
-        program: &str,
-        args: &[String],
-        env: &[(&str, &str)],
-    ) -> Result<CommandOutput>;
+    fn run(&self, program: &str, args: &[String], env: &[(&str, &str)]) -> Result<CommandOutput>;
 
     /// Run a command that changes system state, elevating via `sudo` when needed.
     /// The default implementation does not elevate; `SystemRunner` overrides it.
@@ -115,12 +110,7 @@ impl CommandRunner for SystemRunner {
         which(program)
     }
 
-    fn run(
-        &self,
-        program: &str,
-        args: &[String],
-        env: &[(&str, &str)],
-    ) -> Result<CommandOutput> {
+    fn run(&self, program: &str, args: &[String], env: &[(&str, &str)]) -> Result<CommandOutput> {
         self.exec(program, args, env)
     }
 
@@ -176,7 +166,11 @@ pub fn is_privileged() -> bool {
 pub fn which(program: &str) -> Option<PathBuf> {
     if program.contains('/') {
         let path = PathBuf::from(program);
-        return if is_executable(&path) { Some(path) } else { None };
+        return if is_executable(&path) {
+            Some(path)
+        } else {
+            None
+        };
     }
     let path = std::env::var_os("PATH")?;
     for directory in std::env::split_paths(&path) {
@@ -247,17 +241,16 @@ impl CommandRunner for MockRunner {
             .then(|| PathBuf::from("/usr/bin").join(program))
     }
 
-    fn run(
-        &self,
-        program: &str,
-        args: &[String],
-        _env: &[(&str, &str)],
-    ) -> Result<CommandOutput> {
+    fn run(&self, program: &str, args: &[String], _env: &[(&str, &str)]) -> Result<CommandOutput> {
         self.calls
             .borrow_mut()
             .push((program.to_string(), args.to_vec()));
         let key = format!("{} {}", program, args.join(" "));
-        if let Some(response) = self.responses.get(&key).or_else(|| self.responses.get(program)) {
+        if let Some(response) = self
+            .responses
+            .get(&key)
+            .or_else(|| self.responses.get(program))
+        {
             return Ok(response.clone());
         }
         Ok(CommandOutput {

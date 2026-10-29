@@ -7,9 +7,7 @@ use tide_core::backends::BackendRegistry;
 use tide_core::config::TideConfig;
 use tide_core::error::{Result, TideError};
 use tide_core::exec::{CommandRunner, SystemRunner};
-use tide_core::model::{
-    BackendInfo, CheckLevel, DoctorFinding, PackageSummary, RepoEntry,
-};
+use tide_core::model::{BackendInfo, CheckLevel, DoctorFinding, PackageSummary, RepoEntry};
 use tide_core::util::{parse_key_value_file, validate_unit_name};
 
 #[derive(Debug, Parser)]
@@ -156,7 +154,10 @@ fn run(cli: &Cli) -> Result<()> {
                 print_json(&info);
             } else {
                 println!("Tide OS {}", info.tide_version);
-                println!("Distribution:  {} {} (ID: {})", info.os_name, info.os_version, info.os_id);
+                println!(
+                    "Distribution:  {} {} (ID: {})",
+                    info.os_name, info.os_version, info.os_id
+                );
                 println!("Foundation:    {}", info.foundation);
                 println!("Kernel:        {}", info.kernel);
                 println!("Architecture:  {}", info.architecture);
@@ -171,7 +172,11 @@ fn run(cli: &Cli) -> Result<()> {
                     println!(
                         "  {:<10} {}",
                         backend.id,
-                        if backend.available { "available" } else { "unavailable" }
+                        if backend.available {
+                            "available"
+                        } else {
+                            "unavailable"
+                        }
                     );
                 }
             }
@@ -203,7 +208,9 @@ fn system_info(
     let hostname = std::fs::read_to_string("/etc/hostname")
         .map(|value| value.trim().to_string())
         .unwrap_or_else(|_| "unknown".to_string());
-    let init = if std::path::Path::new("/run/systemd/system").exists() && runner.which("systemctl").is_some() {
+    let init = if std::path::Path::new("/run/systemd/system").exists()
+        && runner.which("systemctl").is_some()
+    {
         "systemd".to_string()
     } else if runner.which("systemctl").is_some() {
         "systemd tools present (not running as init)".to_string()
@@ -222,7 +229,10 @@ fn system_info(
             .get("NAME")
             .cloned()
             .unwrap_or_else(|| "Tide OS".to_string()),
-        os_id: os_release.get("ID").cloned().unwrap_or_else(|| "tide".to_string()),
+        os_id: os_release
+            .get("ID")
+            .cloned()
+            .unwrap_or_else(|| "tide".to_string()),
         os_version: os_release
             .get("VERSION")
             .cloned()
@@ -303,7 +313,14 @@ fn doctor(
         findings.push(DoctorFinding::new(
             CheckLevel::Info,
             "system",
-            format!("load average: {}", load.trim().split_whitespace().take(3).collect::<Vec<_>>().join(" ")),
+            format!(
+                "load average: {}",
+                load.trim()
+                    .split_whitespace()
+                    .take(3)
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            ),
         ));
     }
     if runner.which("fwupdmgr").is_some() {
@@ -327,7 +344,11 @@ fn doctor(
             println!(
                 "  {:<10} {:<12} {}",
                 backend.id,
-                if backend.available { "available" } else { "unavailable" },
+                if backend.available {
+                    "available"
+                } else {
+                    "unavailable"
+                },
                 backend.version.as_deref().unwrap_or("")
             );
         }
@@ -589,7 +610,10 @@ fn command_lines(runner: &dyn CommandRunner, program: &str, args: &[&str]) -> Ve
     if runner.which(program).is_none() {
         return Vec::new();
     }
-    let args = args.iter().map(|value| value.to_string()).collect::<Vec<_>>();
+    let args = args
+        .iter()
+        .map(|value| value.to_string())
+        .collect::<Vec<_>>();
     runner
         .run(program, &args, &[])
         .map(|output| {
@@ -615,7 +639,10 @@ fn graphics_devices() -> Vec<String> {
         }
         let driver = std::fs::read_link(entry.path().join("device/driver"))
             .ok()
-            .and_then(|path| path.file_name().map(|value| value.to_string_lossy().to_string()));
+            .and_then(|path| {
+                path.file_name()
+                    .map(|value| value.to_string_lossy().to_string())
+            });
         devices.push(match driver {
             Some(driver) => format!("{name} ({driver})"),
             None => name,

@@ -2,9 +2,8 @@ use serde::Serialize;
 use tide_core::model::{BackendInfo, DoctorFinding, OperationReport, PackageSummary, RepoEntry};
 
 pub fn json<T: Serialize>(value: &T) -> String {
-    serde_json::to_string_pretty(value).unwrap_or_else(|error| {
-        format!("{{\"error\":\"failed to encode JSON: {error}\"}}")
-    })
+    serde_json::to_string_pretty(value)
+        .unwrap_or_else(|error| format!("{{\"error\":\"failed to encode JSON: {error}\"}}"))
 }
 
 pub fn print_packages(packages: &[PackageSummary]) {
@@ -26,8 +25,8 @@ pub fn print_packages(packages: &[PackageSummary]) {
         .unwrap_or(7)
         .clamp(7, 32);
     println!(
-        "{:<name_width$}  {:<version_width$}  {}",
-        "NAME", "VERSION", "DESCRIPTION"
+        "{:<name_width$}  {:<version_width$}  DESCRIPTION",
+        "NAME", "VERSION"
     );
     for package in packages {
         println!(
@@ -42,7 +41,10 @@ pub fn print_packages(packages: &[PackageSummary]) {
 pub fn print_package(package: &PackageSummary) {
     println!("Name:        {}", package.name);
     println!("Backend:     {}", package.backend);
-    println!("Version:     {}", package.version.as_deref().unwrap_or("unknown"));
+    println!(
+        "Version:     {}",
+        package.version.as_deref().unwrap_or("unknown")
+    );
     if let Some(description) = &package.description {
         println!("Description: {description}");
     }
@@ -63,13 +65,18 @@ pub fn print_backends(backends: &[BackendInfo]) {
         println!("No backends registered.");
         return;
     }
-    let id_width = backends.iter().map(|backend| backend.id.len()).max().unwrap_or(2);
+    let id_width = backends
+        .iter()
+        .map(|backend| backend.id.len())
+        .max()
+        .unwrap_or(2);
     for backend in backends {
-        let state = if backend.available { "available" } else { "unavailable" };
-        println!(
-            "{:<id_width$}  {:<12}  {}",
-            backend.id, state, backend.name
-        );
+        let state = if backend.available {
+            "available"
+        } else {
+            "unavailable"
+        };
+        println!("{:<id_width$}  {:<12}  {}", backend.id, state, backend.name);
         if let Some(version) = &backend.version {
             println!("{:<id_width$}  version: {version}", "");
         }
@@ -89,7 +96,12 @@ pub fn print_repos(repos: &[RepoEntry]) {
         println!("No repositories found.");
         return;
     }
-    let id_width = repos.iter().map(|repo| repo.id.len()).max().unwrap_or(2).clamp(2, 40);
+    let id_width = repos
+        .iter()
+        .map(|repo| repo.id.len())
+        .max()
+        .unwrap_or(2)
+        .clamp(2, 40);
     for repo in repos {
         let state = if repo.enabled { "enabled" } else { "disabled" };
         println!(

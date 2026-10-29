@@ -75,9 +75,9 @@ pub fn validate_unit_name(unit: &str) -> Result<()> {
     if unit.is_empty()
         || unit.len() > 255
         || unit.starts_with('-')
-        || !unit
-            .chars()
-            .all(|character| character.is_ascii_alphanumeric() || matches!(character, '.' | '_' | '-' | '@' | ':'))
+        || !unit.chars().all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '.' | '_' | '-' | '@' | ':')
+        })
     {
         return Err(TideError::InvalidInput {
             kind: "systemd unit",
@@ -99,10 +99,9 @@ pub fn display_command(program: &str, args: &[String]) -> String {
 }
 
 fn shell_quote(value: &str) -> String {
-    if value
-        .chars()
-        .all(|character| character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.' | '/' | ':' | '='))
-    {
+    if value.chars().all(|character| {
+        character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.' | '/' | ':' | '=')
+    }) {
         value.to_string()
     } else {
         format!("'{}'", value.replace('\'', "'\\''"))
@@ -135,7 +134,14 @@ mod tests {
 
     #[test]
     fn accepts_normal_package_names() {
-        for spec in ["firefox", "libc6", "python3.12", "g++", "foo=1.2.3-1", "nvidia-driver"] {
+        for spec in [
+            "firefox",
+            "libc6",
+            "python3.12",
+            "g++",
+            "foo=1.2.3-1",
+            "nvidia-driver",
+        ] {
             validate_package_spec(spec, true).unwrap();
         }
     }

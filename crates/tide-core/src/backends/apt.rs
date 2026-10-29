@@ -81,7 +81,11 @@ impl PackageBackend for AptBackend {
         let output = runner
             .run("apt-get", &["--version".to_string()], &[])
             .ok()?;
-        output.stdout.lines().next().map(|line| line.trim().to_string())
+        output
+            .stdout
+            .lines()
+            .next()
+            .map(|line| line.trim().to_string())
     }
 
     fn notes(&self) -> Vec<String> {
@@ -292,7 +296,9 @@ impl PackageBackend for AptBackend {
                     "apt",
                     "Tide is not running as root; install/remove will request sudo",
                 )
-                .with_remediation("Run read-only commands without sudo; approve the sudo prompt for changes"),
+                .with_remediation(
+                    "Run read-only commands without sudo; approve the sudo prompt for changes",
+                ),
             );
         }
         Ok(findings)
@@ -395,7 +401,10 @@ fn parse_dpkg_list(output: &str) -> Vec<PackageSummary> {
         .filter_map(|line| {
             let mut parts = line.split('\t');
             let name = parts.next()?.trim();
-            let version = parts.next().map(str::trim).filter(|value| !value.is_empty());
+            let version = parts
+                .next()
+                .map(str::trim)
+                .filter(|value| !value.is_empty());
             let status = parts.next().unwrap_or_default().trim();
             if name.is_empty() {
                 return None;
@@ -588,10 +597,8 @@ mod tests {
     use std::fs;
 
     fn temp_dir(name: &str) -> PathBuf {
-        let path = std::env::temp_dir().join(format!(
-            "tide-apt-test-{name}-{}",
-            std::process::id()
-        ));
+        let path =
+            std::env::temp_dir().join(format!("tide-apt-test-{name}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&path);
         fs::create_dir_all(&path).unwrap();
         path
@@ -601,7 +608,10 @@ mod tests {
     fn search_parser_handles_description_separator() {
         let packages = parse_search("firefox - web browser\ncurl - tool\n", "apt");
         assert_eq!(packages.len(), 2);
-        let firefox = packages.iter().find(|package| package.name == "firefox").unwrap();
+        let firefox = packages
+            .iter()
+            .find(|package| package.name == "firefox")
+            .unwrap();
         assert_eq!(firefox.description.as_deref(), Some("web browser"));
     }
 
@@ -646,17 +656,29 @@ mod tests {
         .unwrap();
         let repos = parse_apt_sources(&dir);
         assert_eq!(repos.len(), 3);
-        let debian = repos.iter().find(|repo| repo.uri.as_deref() == Some("http://deb.debian.org/debian")).unwrap();
+        let debian = repos
+            .iter()
+            .find(|repo| repo.uri.as_deref() == Some("http://deb.debian.org/debian"))
+            .unwrap();
         assert!(debian.enabled);
-        let tide = repos.iter().find(|repo| repo.manager == "apt" && repo.suites == ["stable"]).unwrap();
-        assert_eq!(tide.signed_by.as_deref(), Some("/usr/share/keyrings/tide.gpg"));
+        let tide = repos
+            .iter()
+            .find(|repo| repo.manager == "apt" && repo.suites == ["stable"])
+            .unwrap();
+        assert_eq!(
+            tide.signed_by.as_deref(),
+            Some("/usr/share/keyrings/tide.gpg")
+        );
         let options = repos
             .iter()
             .find(|repo| repo.uri.as_deref() == Some("https://packages.example.invalid/repo"))
             .unwrap();
         assert_eq!(options.suites, ["noble"]);
         assert_eq!(options.components, ["main"]);
-        assert_eq!(options.signed_by.as_deref(), Some("/usr/share/keyrings/ms.gpg"));
+        assert_eq!(
+            options.signed_by.as_deref(),
+            Some("/usr/share/keyrings/ms.gpg")
+        );
         fs::remove_dir_all(dir).unwrap();
     }
 

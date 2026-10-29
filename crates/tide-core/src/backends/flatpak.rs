@@ -74,14 +74,21 @@ impl PackageBackend for FlatpakBackend {
     }
 
     fn version(&self, runner: &dyn CommandRunner) -> Option<String> {
-        let output = runner.run("flatpak", &["--version".to_string()], &[]).ok()?;
-        output.stdout.lines().next().map(|line| line.trim().to_string())
+        let output = runner
+            .run("flatpak", &["--version".to_string()], &[])
+            .ok()?;
+        output
+            .stdout
+            .lines()
+            .next()
+            .map(|line| line.trim().to_string())
     }
 
     fn notes(&self) -> Vec<String> {
         vec![
             format!("Using {} installation scope.", self.scope),
-            "Flatpak applications are sandboxed and use runtimes, not distribution dependencies.".into(),
+            "Flatpak applications are sandboxed and use runtimes, not distribution dependencies."
+                .into(),
         ]
     }
 
@@ -99,7 +106,8 @@ impl PackageBackend for FlatpakBackend {
 
     fn info(&self, runner: &dyn CommandRunner, package: &str) -> Result<PackageSummary> {
         validate_flatpak_ref(package)?;
-        let output = self.invoke_if_available(runner, &["info".to_string(), package.to_string()])?;
+        let output =
+            self.invoke_if_available(runner, &["info".to_string(), package.to_string()])?;
         let fields = output
             .lines()
             .filter_map(|line| line.split_once(':'))
@@ -137,7 +145,11 @@ impl PackageBackend for FlatpakBackend {
                 Some(PackageSummary {
                     backend: "flatpak".to_string(),
                     name: name.to_string(),
-                    version: parts.next().map(str::trim).filter(|v| !v.is_empty()).map(str::to_string),
+                    version: parts
+                        .next()
+                        .map(str::trim)
+                        .filter(|v| !v.is_empty())
+                        .map(str::to_string),
                     description: None,
                     installed: Some(true),
                 })
@@ -264,7 +276,11 @@ impl PackageBackend for FlatpakBackend {
                 Some(RepoEntry {
                     id: name.to_string(),
                     manager: "flatpak".to_string(),
-                    uri: parts.next().map(str::trim).filter(|v| !v.is_empty()).map(str::to_string),
+                    uri: parts
+                        .next()
+                        .map(str::trim)
+                        .filter(|v| !v.is_empty())
+                        .map(str::to_string),
                     suites: Vec::new(),
                     components: Vec::new(),
                     enabled: true,
@@ -284,7 +300,11 @@ impl PackageBackend for FlatpakBackend {
             ));
             return Ok(findings);
         }
-        findings.push(DoctorFinding::new(CheckLevel::Ok, "flatpak", "flatpak is present"));
+        findings.push(DoctorFinding::new(
+            CheckLevel::Ok,
+            "flatpak",
+            "flatpak is present",
+        ));
         match self.repositories(runner) {
             Ok(repos) if repos.is_empty() => findings.push(
                 DoctorFinding::new(
@@ -318,9 +338,9 @@ impl FlatpakBackend {
 fn validate_flatpak_ref(reference: &str) -> Result<()> {
     if reference.len() > 255
         || reference.starts_with('-')
-        || !reference
-            .chars()
-            .all(|character| character.is_ascii_alphanumeric() || matches!(character, '.' | '_' | '-'))
+        || !reference.chars().all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '.' | '_' | '-')
+        })
     {
         return Err(TideError::InvalidInput {
             kind: "Flatpak application ID",
@@ -339,8 +359,14 @@ fn parse_columns(output: &str) -> Vec<PackageSummary> {
             if name.is_empty() {
                 return None;
             }
-            let second = parts.next().map(str::trim).filter(|value| !value.is_empty());
-            let third = parts.next().map(str::trim).filter(|value| !value.is_empty());
+            let second = parts
+                .next()
+                .map(str::trim)
+                .filter(|value| !value.is_empty());
+            let third = parts
+                .next()
+                .map(str::trim)
+                .filter(|value| !value.is_empty());
             // Search output has (application, name, description). List/outdated output
             // has (application, version).
             let (version, description) = if third.is_some() {
@@ -383,6 +409,9 @@ mod tests {
     #[test]
     fn scopes_are_explicit() {
         assert_eq!(FlatpakBackend::new("user".into()).scope_flag(), "--user");
-        assert_eq!(FlatpakBackend::new("system".into()).scope_flag(), "--system");
+        assert_eq!(
+            FlatpakBackend::new("system".into()).scope_flag(),
+            "--system"
+        );
     }
 }

@@ -32,7 +32,9 @@ pub enum TideError {
         source: std::io::Error,
     },
 
-    #[error("the package manager database is locked; wait for the other package operation to finish")]
+    #[error(
+        "the package manager database is locked; wait for the other package operation to finish"
+    )]
     Locked,
 
     #[error("permission denied for a privileged operation; run as root or via sudo")]

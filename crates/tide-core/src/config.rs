@@ -6,7 +6,7 @@ use crate::error::{Result, TideError};
 
 /// Tide's on-disk configuration. Every field has a safe default so a missing
 /// configuration file never blocks read-only diagnostics.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct TideConfig {
     pub package: PackageConfig,
@@ -37,31 +37,19 @@ pub struct FlatpakConfig {
     pub scope: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AppImageConfig {
     /// Optional override for the managed AppImage directory.
     pub managed_dir: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct RepositoryConfig {
     /// Tide-native repositories are not active yet. Adapters must never disable
     /// native signature validation, regardless of this value.
     pub native_tide_repos: bool,
-}
-
-impl Default for TideConfig {
-    fn default() -> Self {
-        Self {
-            package: PackageConfig::default(),
-            apt: AptConfig::default(),
-            flatpak: FlatpakConfig::default(),
-            appimage: AppImageConfig::default(),
-            repositories: RepositoryConfig::default(),
-        }
-    }
 }
 
 impl Default for PackageConfig {
@@ -89,22 +77,6 @@ impl Default for FlatpakConfig {
     }
 }
 
-impl Default for AppImageConfig {
-    fn default() -> Self {
-        Self {
-            managed_dir: None,
-        }
-    }
-}
-
-impl Default for RepositoryConfig {
-    fn default() -> Self {
-        Self {
-            native_tide_repos: false,
-        }
-    }
-}
-
 impl TideConfig {
     pub fn default_path() -> PathBuf {
         std::env::var_os("TIDE_CONFIG")
@@ -118,9 +90,10 @@ impl TideConfig {
         if !path.exists() {
             return Ok(Self::default());
         }
-        let content = std::fs::read_to_string(&path).map_err(|error| TideError::io(&path, error))?;
-        let config: TideConfig =
-            toml::from_str(&content).map_err(|error| TideError::Config(format!("{path:?}: {error}")))?;
+        let content =
+            std::fs::read_to_string(&path).map_err(|error| TideError::io(&path, error))?;
+        let config: TideConfig = toml::from_str(&content)
+            .map_err(|error| TideError::Config(format!("{path:?}: {error}")))?;
         config.validate()?;
         Ok(config)
     }

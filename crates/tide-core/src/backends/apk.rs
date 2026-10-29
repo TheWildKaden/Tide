@@ -52,7 +52,11 @@ impl PackageBackend for ApkBackend {
 
     fn version(&self, runner: &dyn CommandRunner) -> Option<String> {
         let output = runner.run("apk", &["--version".to_string()], &[]).ok()?;
-        output.stdout.lines().next().map(|line| line.trim().to_string())
+        output
+            .stdout
+            .lines()
+            .next()
+            .map(|line| line.trim().to_string())
     }
 
     fn notes(&self) -> Vec<String> {
@@ -85,7 +89,10 @@ impl PackageBackend for ApkBackend {
         let fields = parse_colon_fields(&output);
         Ok(PackageSummary {
             backend: "apk".to_string(),
-            name: fields.get("name").cloned().unwrap_or_else(|| package.to_string()),
+            name: fields
+                .get("name")
+                .cloned()
+                .unwrap_or_else(|| package.to_string()),
             version: fields.get("version").cloned(),
             description: fields.get("description").cloned(),
             installed: None,
@@ -222,7 +229,11 @@ impl PackageBackend for ApkBackend {
         if runner.which("apk").is_some() {
             findings.push(DoctorFinding::new(CheckLevel::Ok, "apk", "apk is present"));
         } else {
-            findings.push(DoctorFinding::new(CheckLevel::Error, "apk", "apk was not found"));
+            findings.push(DoctorFinding::new(
+                CheckLevel::Error,
+                "apk",
+                "apk was not found",
+            ));
         }
         if self.repositories(runner)?.is_empty() {
             findings.push(DoctorFinding::new(
@@ -311,7 +322,10 @@ mod tests {
 
     #[test]
     fn splits_apk_versions() {
-        assert_eq!(split_apk_version("firefox-120.0-r0"), ("firefox", Some("120.0-r0")));
+        assert_eq!(
+            split_apk_version("firefox-120.0-r0"),
+            ("firefox", Some("120.0-r0"))
+        );
         assert_eq!(split_apk_version("musl"), ("musl", None));
     }
 

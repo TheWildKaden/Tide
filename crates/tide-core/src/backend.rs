@@ -64,8 +64,5 @@ pub trait PackageBackend {
 }
 
 pub fn unsupported(backend: &'static str, operation: &'static str) -> crate::error::TideError {
-    crate::error::TideError::Unsupported {
-        backend,
-        operation,
-    }
+    crate::error::TideError::Unsupported { backend, operation }
 }

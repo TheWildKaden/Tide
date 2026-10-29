@@ -10,9 +10,7 @@ use tide_core::backends::BackendRegistry;
 use tide_core::config::TideConfig;
 use tide_core::error::{Result, TideError};
 use tide_core::exec::{CommandRunner, SystemRunner};
-use tide_core::model::{
-    BackendInfo, CheckLevel, DoctorFinding, OperationReport, RepoEntry,
-};
+use tide_core::model::{BackendInfo, CheckLevel, DoctorFinding, OperationReport, RepoEntry};
 use tide_core::RunOptions;
 
 #[derive(Debug, Parser)]
@@ -135,8 +133,12 @@ fn error_hint(error: &TideError) -> Option<&'static str> {
     match error {
         TideError::Locked => Some("wait for the other package operation, then retry"),
         TideError::PermissionDenied => Some("run the command as root (for example with sudo)"),
-        TideError::BackendUnavailable(_) => Some("run 'tide backends' to see detected package managers"),
-        TideError::Unsupported { .. } => Some("run 'tide backends' to see what this backend supports"),
+        TideError::BackendUnavailable(_) => {
+            Some("run 'tide backends' to see detected package managers")
+        }
+        TideError::Unsupported { .. } => {
+            Some("run 'tide backends' to see what this backend supports")
+        }
         _ => None,
     }
 }
@@ -149,7 +151,10 @@ fn run(cli: &Cli) -> Result<()> {
     match &cli.command {
         Commands::Backends => {
             let statuses = registry.statuses(&runner);
-            let infos = statuses.into_iter().map(|status| status.info).collect::<Vec<_>>();
+            let infos = statuses
+                .into_iter()
+                .map(|status| status.info)
+                .collect::<Vec<_>>();
             if cli.json {
                 println!("{}", output::json(&infos));
             } else {
@@ -343,7 +348,10 @@ fn run(cli: &Cli) -> Result<()> {
             if cli.json {
                 println!("{}", output::json(&packages));
             } else if packages.is_empty() {
-                println!("All packages are up to date according to {}.", backend.name());
+                println!(
+                    "All packages are up to date according to {}.",
+                    backend.name()
+                );
             } else {
                 output::print_packages(&packages);
             }
@@ -359,10 +367,7 @@ fn doctor(
     registry: &BackendRegistry,
 ) -> Result<()> {
     let mut findings = Vec::new();
-    let config_path = cli
-        .config
-        .clone()
-        .unwrap_or_else(TideConfig::default_path);
+    let config_path = cli.config.clone().unwrap_or_else(TideConfig::default_path);
     if config_path.exists() {
         findings.push(DoctorFinding::new(
             CheckLevel::Ok,
@@ -436,8 +441,9 @@ fn doctor(
             }
         }
         Err(error) => findings.push(
-            DoctorFinding::new(CheckLevel::Error, "backend", error.to_string())
-                .with_remediation("Install a supported package manager or select Flatpak explicitly"),
+            DoctorFinding::new(CheckLevel::Error, "backend", error.to_string()).with_remediation(
+                "Install a supported package manager or select Flatpak explicitly",
+            ),
         ),
     }
 

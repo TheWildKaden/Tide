@@ -52,7 +52,11 @@ impl PackageBackend for PacmanBackend {
 
     fn version(&self, runner: &dyn CommandRunner) -> Option<String> {
         let output = runner.run("pacman", &["--version".to_string()], &[]).ok()?;
-        output.stdout.lines().next().map(|line| line.trim().to_string())
+        output
+            .stdout
+            .lines()
+            .next()
+            .map(|line| line.trim().to_string())
     }
 
     fn notes(&self) -> Vec<String> {
@@ -85,7 +89,10 @@ impl PackageBackend for PacmanBackend {
         let fields = parse_colon_fields(&output);
         Ok(PackageSummary {
             backend: "pacman".to_string(),
-            name: fields.get("Name").cloned().unwrap_or_else(|| package.to_string()),
+            name: fields
+                .get("Name")
+                .cloned()
+                .unwrap_or_else(|| package.to_string()),
             version: fields.get("Version").cloned(),
             description: fields.get("Description").cloned(),
             installed: None,
@@ -144,7 +151,11 @@ impl PackageBackend for PacmanBackend {
         options: &RunOptions,
     ) -> Result<OperationReport> {
         validate_packages(packages)?;
-        let mut args = vec!["-R".to_string(), "--noconfirm".to_string(), "--".to_string()];
+        let mut args = vec![
+            "-R".to_string(),
+            "--noconfirm".to_string(),
+            "--".to_string(),
+        ];
         if options.purge {
             args = vec![
                 "-Rns".to_string(),
@@ -175,10 +186,7 @@ impl PackageBackend for PacmanBackend {
     }
 
     fn upgrade(&self, runner: &dyn CommandRunner) -> Result<OperationReport> {
-        let args = vec![
-            "-Syu".to_string(),
-            "--noconfirm".to_string(),
-        ];
+        let args = vec!["-Syu".to_string(), "--noconfirm".to_string()];
         let output = run_privileged(runner, "pacman", &args, &[])?;
         Ok(OperationReport::completed(
             "pacman packages upgraded".to_string(),
@@ -211,9 +219,17 @@ impl PackageBackend for PacmanBackend {
     fn doctor(&self, runner: &dyn CommandRunner) -> Result<Vec<DoctorFinding>> {
         let mut findings = Vec::new();
         if runner.which("pacman").is_some() {
-            findings.push(DoctorFinding::new(CheckLevel::Ok, "pacman", "pacman is present"));
+            findings.push(DoctorFinding::new(
+                CheckLevel::Ok,
+                "pacman",
+                "pacman is present",
+            ));
         } else {
-            findings.push(DoctorFinding::new(CheckLevel::Error, "pacman", "pacman was not found"));
+            findings.push(DoctorFinding::new(
+                CheckLevel::Error,
+                "pacman",
+                "pacman was not found",
+            ));
         }
         let repos = self.repositories(runner)?;
         if repos.is_empty() {
@@ -314,7 +330,13 @@ pub fn parse_pacman_conf(path: &std::path::Path) -> Vec<RepoEntry> {
                     entries.push(RepoEntry {
                         id: id.clone(),
                         manager: "pacman".to_string(),
-                        uri: Some(value.replace("$repo", id).replace("$arch", "x86_64").trim().to_string()),
+                        uri: Some(
+                            value
+                                .replace("$repo", id)
+                                .replace("$arch", "x86_64")
+                                .trim()
+                                .to_string(),
+                        ),
                         suites: Vec::new(),
                         components: Vec::new(),
                         enabled: true,
@@ -351,6 +373,9 @@ mod tests {
     fn parses_search_blocks() {
         let packages = parse_search("extra/firefox 120.0-1\n    Standalone web browser\n");
         assert_eq!(packages[0].name, "firefox");
-        assert_eq!(packages[0].description.as_deref(), Some("Standalone web browser"));
+        assert_eq!(
+            packages[0].description.as_deref(),
+            Some("Standalone web browser")
+        );
     }
 }

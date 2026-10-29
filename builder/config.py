@@ -141,12 +141,9 @@ class TideConfig:
         return [str(package) for package in packages]
 
     def packages(self, profile: str = "") -> List[str]:
-        packages = (
-            self.base_packages
-            + self.firmware_packages
-            + self.profile_packages(profile)
-            + self.installer_packages
-        )
+        packages = self.base_packages + self.firmware_packages + self.profile_packages(profile)
+        if self.installer_enabled:
+            packages += self.installer_packages
         return validate_packages(packages)
 
     def sources_list(self) -> str:
