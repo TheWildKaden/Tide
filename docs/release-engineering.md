@@ -76,11 +76,52 @@ authenticity—evidence.
 | Workflow | Trigger | Behavior |
 |---|---|---|
 | `ci.yml` | push to `main`, pull request, manual | Rust fmt/clippy/test/release build; Python tests; ShellCheck; asset parsing; doctor |
-| `build-iso.yml` | manual | Builds an ISO for a chosen desktop profile, verifies, uploads artifact |
-| `release.yml` | published release | Builds, verifies, uploads assets to the release |
+| `build-iso.yml` | manual | Builds an ISO for a chosen desktop profile, verifies it, uploads a workflow artifact, and optionally attaches it to an existing release |
+| `release.yml` | push of a `v*` tag, manual with a tag | Builds, verifies, creates or updates the GitHub release, and uploads the ISO, checksums, and manifest |
 
-Permissions are read-only except `release.yml`, which has `contents: write` to attach assets. No
-secrets are exposed to pull-request workflows.
+Permissions are read-only except `release.yml` and the optional upload step in `build-iso.yml`,
+which need `contents: write` to attach assets. No secrets are exposed to pull-request workflows.
+
+The manual `release.yml` run requires an existing tag. A `v*` tag push creates the release if it
+does not exist and updates it otherwise. The workflow never publishes from a pull request.
+
+## Publishing
+
+### From CI (recommended)
+
+```bash
+git tag v0.1.0-alpha.1
+git push origin v0.1.0-alpha.1
+```
+
+The tag build checks out that tag, runs `./build.sh all` and `./build.sh verify`, then uploads the
+ISO, per-ISO checksum, `SHA256SUMS`, and manifest with `--clobber`. Re-running the workflow for the
+same tag replaces the assets. The release workflow does not boot the image.
+
+Alternative: run **Build and publish release ISO** manually and supply an existing tag and desktop
+profile. Use **Build live ISO** with `release_tag` set to attach an ISO-only build to an existing
+release.
+
+### From a local build
+
+```bash
+./build.sh all
+./build.sh verify
+./scripts/publish-release.sh v0.1.0-alpha.1 --create --prerelease
+```
+
+`scripts/publish-release.sh` requires the GitHub CLI (`gh`), an authenticated account with release
+write access, and the tag must already exist. Options:
+
+| Option | Effect |
+|---|---|
+| `--create` | Create the release from the existing tag if it is missing |
+| `--prerelease` | Mark a newly created release as a prerelease |
+| `--dry-run` | Verify checksums and list assets without uploading |
+| `--help` | Show usage |
+
+`make publish-release TAG=<tag> CREATE=1` wraps the same script. Assets are checksummed but not
+signed; see the signing status above.
 
 ## Versioning
 
@@ -110,3 +151,5 @@ When bumping the version, update:
 - [ ] First-boot diagnostic verified.
 - [ ] Release notes state that assets are unsigned and list known gaps.
 - [ ] Checksums published alongside assets.
+- [ ] Tag pushed as `v<version>` (or the manual release workflow run) and the release assets
+      confirmed on the GitHub release page.

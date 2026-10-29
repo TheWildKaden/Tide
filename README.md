@@ -88,6 +88,30 @@ with a global option:
 ./build.sh --desktop none all
 ```
 
+## Publishing a release
+
+Pushing a tag that starts with `v` builds the ISO on GitHub Actions and creates or updates the
+matching GitHub release with the ISO, checksums, and manifest:
+
+```bash
+git tag v0.1.0-alpha.1
+git push origin v0.1.0-alpha.1
+```
+
+The release workflow can also be started manually with an existing tag. For an ISO built locally,
+upload it with the GitHub CLI:
+
+```bash
+gh auth status
+./scripts/publish-release.sh v0.1.0-alpha.1 --create --prerelease
+# or through make:
+make publish-release TAG=v0.1.0-alpha.1 CREATE=1
+```
+
+`scripts/publish-release.sh` verifies checksums first and refuses to publish a tag that does not
+exist unless `--create` is passed. Assets are uploaded with `--clobber`, so re-running replaces
+them. Release assets are checksummed but **not signed** yet.
+
 ## Package manager
 
 ```bash

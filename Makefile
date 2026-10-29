@@ -1,4 +1,4 @@
-.PHONY: help doctor test lint fmt build build-iso clean
+.PHONY: help doctor test lint fmt build build-iso publish-release clean
 
 help:
 	@printf '%s\n' \
@@ -9,6 +9,7 @@ help:
 		'  make fmt       Format Rust code' \
 		'  make build     Bootstrap, configure, build ISO, write manifest (requires root/network)' \
 		'  make build-iso Build only the live ISO' \
+		'  make publish-release TAG=v0.1.0-alpha.1  Upload output/ to a GitHub release' \
 		'  make clean     Remove local build artifacts'
 
 doctor:
@@ -29,6 +30,10 @@ build:
 
 build-iso:
 	./build.sh build-iso
+
+publish-release:
+	@test -n "$(TAG)" || { echo "usage: make publish-release TAG=v0.1.0-alpha.1 [CREATE=1]"; exit 2; }
+	./scripts/publish-release.sh "$(TAG)" $(if $(filter 1,$(CREATE)),--create)
 
 clean:
 	./build.sh clean
