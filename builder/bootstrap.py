@@ -7,7 +7,7 @@ import shutil
 from pathlib import Path
 
 from builder.config import TideConfig
-from builder.exec import CommandError, run
+from builder.exec import run
 from builder.logger import BuildLogger
 from builder.packages import PackagePlan
 from builder.paths import BuildPaths

@@ -1,29 +1,142 @@
+# Tide OS build configuration.
+#
+# Status: Tide is a Debian-based development distribution. Debian 12 (bookworm)
+# supplies the package archive, kernel, bootloader, and installer components.
+# Tide adds identity, build orchestration, package-manager interfaces, tooling,
+# desktop defaults, and first-boot diagnostics.
+
 os:
   name: Tide OS
+  id: tide
+  version: "0.1.0-alpha.1"
+  version_codename: tidepool
   codename: bookworm
+  foundation: debian
   architecture: amd64
+
+release:
+  channel: development
 
 mirror:
   main: http://deb.debian.org/debian
   security: http://security.debian.org/debian-security
+  areas:
+    - main
+    - contrib
+    - non-free
+    - non-free-firmware
 
 packages:
   base:
     - systemd
+    - systemd-sysv
+    - dbus
+    - udev
     - sudo
+    - ca-certificates
     - network-manager
     - openssh-server
-    - ca-certificates
-
-branding:
-  name: Tide OS
-  wallpaper: /usr/share/backgrounds/tiide/default.png
-  theme: breeze
-
-custom:
-  scripts:
-    - scripts/hello.sh
+    - locales
+    - tzdata
+    - procps
+    - iproute2
+    - kmod
+    - curl
+    - wget
+    - rsync
+    - nano
+    - bash
+    - apt
+    - xdg-user-dirs
+  firmware:
+    - firmware-linux-free
+    - firmware-linux-nonfree
+    - firmware-misc-nonfree
 
 desktop:
   enabled: true
-  environment: kde
+  default: kde
+  profiles:
+    kde:
+      label: KDE Plasma (primary)
+      packages:
+        - kde-plasma-desktop
+        - plasma-workspace-wayland
+        - plasma-nm
+        - plasma-pa
+        - plasma-discover
+        - plasma-discover-backend-flatpak
+        - kde-config-screenlocker
+        - kwalletmanager
+        - dolphin
+        - konsole
+        - ark
+        - kate
+        - spectacle
+        - sddm
+        - breeze
+        - breeze-gtk-theme
+        - fonts-inter
+        - fonts-noto-color-emoji
+        - pipewire
+        - pipewire-pulse
+        - wireplumber
+        - bluez
+        - upower
+        - power-profiles-daemon
+        - fwupd
+        - flatpak
+    xfce:
+      label: XFCE (optional)
+      packages:
+        - task-xfce-desktop
+        - lightdm
+        - lightdm-gtk-greeter
+        - xfce4-terminal
+        - thunar
+        - network-manager-gnome
+        - pipewire
+        - pipewire-pulse
+        - wireplumber
+        - bluez
+        - upower
+        - fwupd
+        - flatpak
+    minimal:
+      label: Minimal desktop (Openbox)
+      packages:
+        - xserver-xorg
+        - xinit
+        - openbox
+        - lightdm
+        - lightdm-gtk-greeter
+        - network-manager
+        - pipewire
+        - pipewire-pulse
+        - wireplumber
+        - xterm
+        - fonts-dejavu
+
+installer:
+  enabled: true
+  framework: calamares
+  packages:
+    - calamares
+    - cryptsetup
+    - gparted
+    - os-prober
+    - efibootmgr
+    - grub2-common
+    - squashfs-tools
+    - dosfstools
+    - e2fsprogs
+    - btrfs-progs
+
+boot:
+  append: "boot=live quiet splash"
+
+build:
+  compression: xz
+
+custom:
+  scripts: []

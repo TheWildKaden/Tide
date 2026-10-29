@@ -8,7 +8,7 @@ from pathlib import Path
 
 from builder.branding import BrandingStage
 from builder.config import TideConfig
-from builder.exec import ChrootMounts, chroot_run, run
+from builder.exec import ChrootMounts, chroot_run
 from builder.logger import BuildLogger
 from builder.packages import PackagePlan
 from builder.paths import BuildPaths
@@ -16,6 +16,14 @@ from builder.paths import BuildPaths
 
 class ChrootError(RuntimeError):
     pass
+
+
+class _NullMounts:
+    def __enter__(self) -> "_NullMounts":
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        return None
 
 
 class ChrootStage:
@@ -63,7 +71,7 @@ class ChrootStage:
             "TIDE_DESKTOP_PROFILE": self.profile or "none",
             "DEBIAN_FRONTEND": "noninteractive",
         }
-        with ChrootMounts(self.rootfs, self.logger) as _mounts:
+        with ChrootMounts(self.rootfs, self.logger) if not self.dry_run else _NullMounts():
             chroot_run(
                 self.rootfs,
                 ["/bin/bash", "/tmp/tide-rootfs-config.sh"],
