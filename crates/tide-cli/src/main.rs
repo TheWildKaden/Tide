@@ -11,10 +11,9 @@ use tide_core::config::TideConfig;
 use tide_core::error::{Result, TideError};
 use tide_core::exec::{CommandRunner, SystemRunner};
 use tide_core::model::{
-    BackendInfo, CheckLevel, DoctorFinding, OperationReport, PackageSummary, RepoEntry,
+    BackendInfo, CheckLevel, DoctorFinding, OperationReport, RepoEntry,
 };
-use tide_core::util::display_command;
-use tide_core::{PackageBackend, RunOptions};
+use tide_core::RunOptions;
 
 #[derive(Debug, Parser)]
 #[command(
@@ -93,6 +92,8 @@ enum Commands {
     Backends,
     /// Show packages with available upgrades.
     Outdated,
+    /// Show Tide package-manager version details.
+    Version,
 }
 
 #[derive(Debug, Subcommand)]
@@ -537,12 +538,6 @@ fn validate_query_list(values: &[String]) -> Result<()> {
         }
     }
     Ok(())
-}
-
-// Keep this import exercised so the public helper stays part of the CLI's API surface.
-#[allow(dead_code)]
-fn describe(program: &str, args: &[String]) -> String {
-    display_command(program, args)
 }
 
 #[cfg(test)]

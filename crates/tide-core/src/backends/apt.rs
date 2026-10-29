@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use crate::backend::{unsupported, PackageBackend, RunOptions};
+use crate::backend::{PackageBackend, RunOptions};
 use crate::error::{Result, TideError};
 use crate::exec::CommandRunner;
 use crate::model::{
@@ -231,17 +231,45 @@ impl PackageBackend for AptBackend {
                 format!("missing commands: {}", missing.join(", ")),
             ));
         }
-        let output = runner.run("apt-get", &["check".to_string()], &[]);
+        let output = if runner.is_privileged() {
+            Some(runner.run("apt-get", &["check".to_string()], &[]))
+        } else {
+            None
+        };
         match output {
-            Ok(_) => findings.push(DoctorFinding::new(
+            Some(Ok(_)) => findings.push(DoctorFinding::new(
                 CheckLevel::Ok,
                 "apt",
                 "APT dependency check passed",
             )),
-            Err(error) => findings.push(
+            Some(Err(error)) => findings.push(
                 DoctorFinding::new(CheckLevel::Error, "apt", error.to_string())
                     .with_remediation("Inspect /var/lib/dpkg/status and /etc/apt/sources.list"),
             ),
+            None => {
+                let query = runner.run(
+                    "dpkg-query",
+                    &["-W".to_string(), "-f=${Package}\\n".to_string()],
+                    &[],
+                );
+                match query {
+                    Ok(_) => findings.push(DoctorFinding::new(
+                        CheckLevel::Ok,
+                        "apt",
+                        "dpkg status database is readable",
+                    )),
+                    Err(error) => findings.push(DoctorFinding::new(
+                        CheckLevel::Error,
+                        "apt",
+                        format!("dpkg status database is not readable: {error}"),
+                    )),
+                }
+                findings.push(DoctorFinding::new(
+                    CheckLevel::Info,
+                    "apt",
+                    "full APT dependency check skipped because it requires root",
+                ));
+            }
         }
         let repos = self.repositories(runner)?;
         let unsigned = repos
@@ -285,16 +313,15 @@ fn validate_packages(packages: &[String]) -> Result<()> {
 }
 
 fn collect_lines(output: &str) -> Vec<String> {
-    output
+    let mut lines = output
         .lines()
         .map(str::trim)
         .filter(|line| !line.is_empty())
-        .rev()
-        .take(8)
-        .collect::<Vec<_>>()
-        .into_iter()
-        .rev()
-        .collect()
+        .collect::<Vec<_>>();
+    if lines.len() > 8 {
+        lines = lines.split_off(lines.len() - 8);
+    }
+    lines.into_iter().map(str::to_string).collect()
 }
 
 pub(crate) fn parse_search(output: &str, backend: &str) -> Vec<PackageSummary> {
@@ -341,7 +368,7 @@ fn parse_show(output: &str, requested: &str, backend: &str) -> Result<PackageSum
 }
 
 fn parse_deb822_fields(stanza: &str) -> BTreeMap<String, String> {
-    let mut fields = BTreeMap::new();
+    let mut fields: BTreeMap<String, String> = BTreeMap::new();
     let mut current: Option<String> = None;
     for line in stanza.lines() {
         if line.starts_with(' ') || line.starts_with('\t') {
@@ -451,23 +478,55 @@ fn parse_list_sources(content: &str, entries: &mut Vec<RepoEntry>) {
         if line.is_empty() || line.starts_with('#') {
             continue;
         }
-        let enabled = !line.starts_with('#');
-        let mut parts = line.split_whitespace();
-        let kind = match parts.next() {
-            Some("deb") | Some("deb-src") => parts.next(),
+        let mut tokens = line.split_whitespace();
+        let kind = match tokens.next() {
+            Some("deb") | Some("deb-src") => tokens.next(),
             _ => None,
         };
-        let Some(uri) = kind else { continue };
-        let suite = parts.next().unwrap_or_default().to_string();
-        let components = parts.map(str::to_string).collect::<Vec<_>>();
+        // One-line sources may use an option block:
+        //   deb [arch=amd64 signed-by=/usr/share/keyrings/x.gpg] URI suite components
+        let mut signed_by = None;
+        let mut uri = kind;
+        if let Some(candidate) = uri {
+            if candidate.starts_with('[') {
+                let mut option_parts = vec![candidate.to_string()];
+                let mut closed = candidate.ends_with(']');
+                while !closed {
+                    match tokens.next() {
+                        Some(part) => {
+                            closed = part.ends_with(']');
+                            option_parts.push(part.to_string());
+                        }
+                        None => break,
+                    }
+                }
+                let options = option_parts
+                    .join(" ")
+                    .trim_start_matches('[')
+                    .trim_end_matches(']')
+                    .to_string();
+                for option in options.split_whitespace() {
+                    if let Some(value) = option.strip_prefix("signed-by=") {
+                        signed_by = Some(value.to_string());
+                    }
+                }
+                uri = tokens.next();
+            }
+        }
+        let Some(uri) = uri else { continue };
+        if uri.starts_with('[') {
+            continue;
+        }
+        let suite = tokens.next().unwrap_or_default().to_string();
+        let components = tokens.map(str::to_string).collect::<Vec<_>>();
         entries.push(RepoEntry {
             id: format!("{}-{}", sanitize_id(uri), entries.len()),
             manager: "apt".to_string(),
             uri: Some(uri.to_string()),
             suites: vec![suite],
             components,
-            enabled,
-            signed_by: None,
+            enabled: !line.starts_with('#'),
+            signed_by,
         });
     }
 }
@@ -542,8 +601,8 @@ mod tests {
     fn search_parser_handles_description_separator() {
         let packages = parse_search("firefox - web browser\ncurl - tool\n", "apt");
         assert_eq!(packages.len(), 2);
-        assert_eq!(packages[0].name, "firefox");
-        assert_eq!(packages[0].description.as_deref(), Some("web browser"));
+        let firefox = packages.iter().find(|package| package.name == "firefox").unwrap();
+        assert_eq!(firefox.description.as_deref(), Some("web browser"));
     }
 
     #[test]
@@ -576,7 +635,7 @@ mod tests {
         let dir = temp_dir("sources");
         fs::write(
             dir.join("sources.list"),
-            "deb http://deb.debian.org/debian bookworm main contrib\n# deb http://example.invalid/x stable main\n",
+            "deb http://deb.debian.org/debian bookworm main contrib\n# deb http://example.invalid/x stable main\ndeb [arch=amd64 signed-by=/usr/share/keyrings/ms.gpg] https://packages.example.invalid/repo noble main\n",
         )
         .unwrap();
         fs::create_dir_all(dir.join("sources.list.d")).unwrap();
@@ -586,11 +645,18 @@ mod tests {
         )
         .unwrap();
         let repos = parse_apt_sources(&dir);
-        assert_eq!(repos.len(), 2);
+        assert_eq!(repos.len(), 3);
         let debian = repos.iter().find(|repo| repo.uri.as_deref() == Some("http://deb.debian.org/debian")).unwrap();
         assert!(debian.enabled);
         let tide = repos.iter().find(|repo| repo.manager == "apt" && repo.suites == ["stable"]).unwrap();
         assert_eq!(tide.signed_by.as_deref(), Some("/usr/share/keyrings/tide.gpg"));
+        let options = repos
+            .iter()
+            .find(|repo| repo.uri.as_deref() == Some("https://packages.example.invalid/repo"))
+            .unwrap();
+        assert_eq!(options.suites, ["noble"]);
+        assert_eq!(options.components, ["main"]);
+        assert_eq!(options.signed_by.as_deref(), Some("/usr/share/keyrings/ms.gpg"));
         fs::remove_dir_all(dir).unwrap();
     }
 

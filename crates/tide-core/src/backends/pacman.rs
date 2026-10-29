@@ -7,7 +7,7 @@ use crate::exec::CommandRunner;
 use crate::model::{
     BackendCapabilities, CheckLevel, DoctorFinding, OperationReport, PackageSummary, RepoEntry,
 };
-use crate::util::{display_command, validate_package_spec};
+use crate::util::validate_package_spec;
 
 use super::{ensure_program, planned, run, run_privileged};
 

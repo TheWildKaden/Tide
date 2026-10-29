@@ -178,7 +178,7 @@ mod tests {
     #[test]
     fn selects_apt_when_available() {
         let registry = BackendRegistry::new(&TideConfig::default());
-        let runner = MockRunner::with_programs(&["apt-get"]);
+        let runner = MockRunner::with_programs(&["apt-get", "dpkg-query"]);
         let backend = registry
             .select(&TideConfig::default(), None, &runner)
             .unwrap();
@@ -191,7 +191,8 @@ mod tests {
         let runner = MockRunner::default();
         let error = registry
             .select(&TideConfig::default(), Some("pacman"), &runner)
-            .unwrap_err();
+            .err()
+            .expect("pacman must be unavailable");
         assert!(error.to_string().contains("not available"));
     }
 }

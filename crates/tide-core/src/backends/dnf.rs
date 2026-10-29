@@ -7,7 +7,7 @@ use crate::exec::CommandRunner;
 use crate::model::{
     BackendCapabilities, CheckLevel, DoctorFinding, OperationReport, PackageSummary, RepoEntry,
 };
-use crate::util::{display_command, validate_package_spec};
+use crate::util::validate_package_spec;
 
 use super::{ensure_program, planned, run, run_privileged};
 
@@ -18,15 +18,11 @@ const QUERY_FORMAT: &str = "%{name}\t%{version}\t%{summary}\\n";
 #[derive(Debug, Clone)]
 pub struct DnfBackend {
     repo_dir: PathBuf,
-    program: &'static str,
 }
 
 impl DnfBackend {
     pub fn new(repo_dir: PathBuf) -> Self {
-        Self {
-            repo_dir,
-            program: "dnf5",
-        }
+        Self { repo_dir }
     }
 
     fn program(&self, runner: &dyn CommandRunner) -> &'static str {

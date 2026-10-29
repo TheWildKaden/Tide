@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -204,8 +203,10 @@ fn system_info(
     let hostname = std::fs::read_to_string("/etc/hostname")
         .map(|value| value.trim().to_string())
         .unwrap_or_else(|_| "unknown".to_string());
-    let init = if runner.which("systemctl").is_some() {
+    let init = if std::path::Path::new("/run/systemd/system").exists() && runner.which("systemctl").is_some() {
         "systemd".to_string()
+    } else if runner.which("systemctl").is_some() {
+        "systemd tools present (not running as init)".to_string()
     } else {
         "not detected".to_string()
     };
@@ -268,7 +269,13 @@ fn doctor(
         findings.push(DoctorFinding::new(
             CheckLevel::Ok,
             "init",
-            "systemd is available for service management",
+            "systemd is running as the init system",
+        ));
+    } else if info.init.starts_with("systemd tools") {
+        findings.push(DoctorFinding::new(
+            CheckLevel::Info,
+            "init",
+            "systemctl is installed but systemd is not PID 1; service operations are unavailable",
         ));
     } else {
         findings.push(DoctorFinding::new(
@@ -335,6 +342,11 @@ fn services(cli: &Cli, runner: &dyn CommandRunner, action: Option<&ServiceAction
     if runner.which("systemctl").is_none() {
         return Err(TideError::Message(
             "systemctl was not found; Tide service management currently uses systemd".into(),
+        ));
+    }
+    if !std::path::Path::new("/run/systemd/system").exists() {
+        return Err(TideError::Message(
+            "systemd is not running as PID 1 (container or chroot detected); tidectl services requires a booted systemd system".into(),
         ));
     }
     match action.unwrap_or(&ServiceAction::List) {
@@ -705,11 +717,6 @@ fn print_findings(findings: &[DoctorFinding]) {
             println!("          fix: {remediation}");
         }
     }
-}
-
-#[allow(dead_code)]
-fn _keep_map_type_exercised(values: &BTreeMap<String, String>) -> usize {
-    values.len()
 }
 
 #[cfg(test)]
