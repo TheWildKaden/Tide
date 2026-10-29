@@ -1,4 +1,5 @@
 # Build outputs and staging areas
+.tide-build/
 rootfs/
 cache/
 live-build/cache/
@@ -7,6 +8,7 @@ output/
 logs/
 .state/
 .tmp/
+staging/
 *.log
 *.tar
 *.iso

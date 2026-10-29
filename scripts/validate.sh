@@ -36,13 +36,13 @@ log "Rust release build"
 cargo build --release --workspace --bins
 
 log "Shell syntax"
-for script in build.sh rootfs-config.sh scripts/*.sh assets/firstboot/*.sh; do
+for script in build.sh install_languages.sh rootfs-config.sh scripts/*.sh assets/firstboot/*.sh; do
     bash -n "$script"
 done
 
 if command -v shellcheck >/dev/null 2>&1; then
     log "ShellCheck"
-    shellcheck build.sh rootfs-config.sh scripts/*.sh assets/firstboot/*.sh
+    shellcheck build.sh install_languages.sh rootfs-config.sh scripts/*.sh assets/firstboot/*.sh
 else
     log "ShellCheck not installed; skipping (CI installs it)"
 fi

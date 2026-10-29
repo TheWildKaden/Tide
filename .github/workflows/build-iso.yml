@@ -9,9 +9,14 @@ on:
         default: kde
         type: choice
         options: [kde, xfce, minimal, none]
+      release_tag:
+        description: Optional existing release tag to upload the ISO to (leave blank for artifact only)
+        required: false
+        default: ""
+        type: string
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: iso-${{ github.ref }}
@@ -36,7 +41,7 @@ jobs:
         run: ./build.sh --desktop "${{ inputs.desktop }}" all
       - name: Verify artifacts
         run: ./build.sh verify
-      - name: Upload ISO
+      - name: Upload ISO artifact
         uses: actions/upload-artifact@v4
         with:
           name: tide-iso-${{ inputs.desktop }}
@@ -47,6 +52,23 @@ jobs:
             output/manifests/*.json
           if-no-files-found: error
           retention-days: 14
+      - name: Upload ISO to existing release
+        if: inputs.release_tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::release $TAG does not exist; use the release workflow to create it"
+            exit 1
+          fi
+          gh release upload "$TAG" \
+            output/*.iso \
+            output/*.sha256 \
+            output/SHA256SUMS \
+            output/manifests/*.json \
+            --clobber
       - name: Record validation limits
         run: |
           {

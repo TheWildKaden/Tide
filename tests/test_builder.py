@@ -8,8 +8,10 @@ import unittest
 from pathlib import Path
 
 from builder.branding import BrandingStage
+from builder.cleanup import CleanupStage
 from builder.config import ConfigError, TideConfig, load_config, validate_packages
 from builder.environment import doctor
+from builder.exec import run
 from builder.logger import BuildLogger
 from builder.manifest import generate_manifest, parse_checksum_file, sha256_file, verify
 from builder.packages import PackagePlan
@@ -132,11 +134,49 @@ class EnvironmentTests(unittest.TestCase):
             self.assertIn("Debian bookworm", identity.message)
 
 
+class ExecTests(unittest.TestCase):
+    def test_privileged_env_is_passed_through_sudo(self) -> None:
+        import os
+
+        if os.geteuid() == 0:
+            self.skipTest("running as root does not use sudo")
+        with tempfile.TemporaryDirectory() as temp:
+            logger = BuildLogger(Path(temp) / "logs", "exec-test")
+            completed = run(
+                ["true"],
+                logger,
+                env={"TIDE_EXAMPLE": "value", "SOURCE_DATE_EPOCH": "0"},
+                privileged=True,
+                dry_run=True,
+            )
+            argv = list(completed.args)
+            self.assertEqual(argv[:2], ["sudo", "env"])
+            self.assertIn("TIDE_EXAMPLE=value", argv)
+            self.assertIn("SOURCE_DATE_EPOCH=0", argv)
+            self.assertEqual(argv[-1], "true")
+            logger.close()
+
+    def test_cleanup_dry_run_keeps_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            paths = BuildPaths.resolve(REPO, Path(temp) / "build")
+            paths.ensure()
+            marker = paths.work / "keep-me"
+            marker.write_text("x", encoding="utf-8")
+            logger = BuildLogger(Path(temp) / "logs", "cleanup-test")
+            CleanupStage(logger, paths, dry_run=True).clean()
+            self.assertTrue(marker.exists())
+            logger.close()
+
+
 class AssetTests(unittest.TestCase):
     def test_shell_scripts_parse(self) -> None:
         import subprocess
 
-        for script in [REPO / "rootfs-config.sh", REPO / "assets/firstboot/tide-firstboot.sh"]:
+        for script in [
+            REPO / "install_languages.sh",
+            REPO / "rootfs-config.sh",
+            REPO / "assets/firstboot/tide-firstboot.sh",
+        ]:
             completed = subprocess.run(["bash", "-n", str(script)], check=False)
             self.assertEqual(completed.returncode, 0, f"{script} has a syntax error")
 

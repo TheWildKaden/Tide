@@ -67,8 +67,11 @@ class LiveBuildStage:
         if not source.is_dir():
             raise LiveBuildError(f"live-build configuration directory not found: {source}")
         remove_path(self.live_dir, self.logger, dry_run=self.dry_run)
-        if not self.dry_run:
-            shutil.copytree(source, self.live_dir)
+        if self.dry_run:
+            self.logger.info(f"Would prepare live-build tree at {self.live_dir}")
+            BrandingStage(self.config, self.paths.repo, self.logger).validate()
+            return
+        shutil.copytree(source, self.live_dir)
         for directory in ("config/includes.chroot", "config/package-lists", "config/hooks/live"):
             (self.live_dir / directory).mkdir(parents=True, exist_ok=True)
 
