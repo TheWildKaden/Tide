@@ -15,7 +15,7 @@ from pathlib import Path
 
 from builder.branding import BrandingStage
 from builder.config import TideConfig
-from builder.exec import run
+from builder.exec import remove_path, run
 from builder.logger import BuildLogger
 from builder.packages import PackagePlan
 from builder.paths import BuildPaths
@@ -66,9 +66,9 @@ class LiveBuildStage:
         source = self.paths.live_source
         if not source.is_dir():
             raise LiveBuildError(f"live-build configuration directory not found: {source}")
-        if self.live_dir.exists():
-            shutil.rmtree(self.live_dir)
-        shutil.copytree(source, self.live_dir)
+        remove_path(self.live_dir, self.logger, dry_run=self.dry_run)
+        if not self.dry_run:
+            shutil.copytree(source, self.live_dir)
         for directory in ("config/includes.chroot", "config/package-lists", "config/hooks/live"):
             (self.live_dir / directory).mkdir(parents=True, exist_ok=True)
 

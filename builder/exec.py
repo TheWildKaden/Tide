@@ -35,14 +35,17 @@ def run(
     capture: bool = False,
 ) -> subprocess.CompletedProcess:
     argv = [str(part) for part in command]
+    env_pairs = [(str(key), str(value)) for key, value in (env or {}).items()]
     if privileged and not is_root():
-        argv = ["sudo", *argv]
+        # `sudo` resets the environment by default. Pass explicit assignments
+        # through `sudo env` so chroot/live-build stages receive TIDE_* and
+        # SOURCE_DATE_EPOCH instead of silently falling back to defaults.
+        argv = ["sudo", "env", *(f"{key}={value}" for key, value in env_pairs), *argv]
     logger.info("Running: " + " ".join(argv))
     if dry_run:
         return subprocess.CompletedProcess(argv, 0, "", "")
     merged_env = os.environ.copy()
-    if env:
-        merged_env.update({str(key): str(value) for key, value in env.items()})
+    merged_env.update(dict(env_pairs))
     try:
         completed = subprocess.run(
             argv,
@@ -61,6 +64,25 @@ def run(
             message += f"\n{detail}"
         raise CommandError(message)
     return completed
+
+
+def remove_path(path: Path, logger: BuildLogger, *, dry_run: bool = False) -> None:
+    """Remove a file or directory, elevating only when the build tree is root-owned."""
+    if not path.exists() and not path.is_symlink():
+        return
+    if dry_run:
+        logger.info(f"Would remove {path}")
+        return
+    if is_root():
+        if path.is_dir() and not path.is_symlink():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+        return
+    if path.is_dir() and not path.is_symlink() and os.access(path, os.W_OK):
+        shutil.rmtree(path)
+        return
+    run(["rm", "-rf", "--", str(path)], logger, privileged=True)
 
 
 def require_commands(commands: Iterable[str]) -> List[str]:

@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 
+from builder.exec import remove_path
 from builder.logger import BuildLogger
 from builder.paths import BuildPaths
 
 
 class CleanupStage:
-    def __init__(self, logger: BuildLogger, paths: BuildPaths) -> None:
+    def __init__(self, logger: BuildLogger, paths: BuildPaths, *, dry_run: bool = False) -> None:
         self.logger = logger
         self.paths = paths
+        self.dry_run = dry_run
 
     def _safe_target(self, path: Path, *, allow_outside_repo: bool = False) -> bool:
         resolved = path.resolve()
@@ -31,10 +32,10 @@ class CleanupStage:
             if not self._safe_target(work, allow_outside_repo=force):
                 raise RuntimeError(f"refusing to remove unsafe build directory: {work}")
             self.logger.info(f"Removing build directory {work}")
-            shutil.rmtree(work)
+            remove_path(work, self.logger, dry_run=self.dry_run)
         if not keep_output and self.paths.output.exists():
             if not self._safe_target(self.paths.output):
                 raise RuntimeError(f"refusing to remove unsafe output directory: {self.paths.output}")
             self.logger.info(f"Removing output directory {self.paths.output}")
-            shutil.rmtree(self.paths.output)
+            remove_path(self.paths.output, self.logger, dry_run=self.dry_run)
         self.logger.info("Cleanup complete")

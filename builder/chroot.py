@@ -8,7 +8,7 @@ from pathlib import Path
 
 from builder.branding import BrandingStage
 from builder.config import TideConfig
-from builder.exec import ChrootMounts, chroot_run
+from builder.exec import ChrootMounts, chroot_run, remove_path, run
 from builder.logger import BuildLogger
 from builder.packages import PackagePlan
 from builder.paths import BuildPaths
@@ -51,16 +51,30 @@ class ChrootStage:
         if not shutil.which("chroot") and not self.dry_run:
             raise ChrootError("chroot command is not available")
 
-        branding = BrandingStage(self.config, self.paths.repo, self.logger)
-        branding.stage_rootfs(self.rootfs, self.profile, dry_run=self.dry_run)
-        RustToolsStage(self.paths.repo, self.logger, dry_run=self.dry_run).stage(self.rootfs)
         script_source = self.paths.repo / "rootfs-config.sh"
         if not script_source.exists():
             raise ChrootError("rootfs-config.sh is missing")
+
+        # debootstrap produces a root-owned rootfs. Assemble everything Tide adds
+        # in a user-owned staging tree, then rsync it in as root so file ownership
+        # stays correct and no unprivileged write touches the rootfs.
+        staging = self.paths.work / "staging" / "rootfs-overlay"
+        remove_path(staging, self.logger, dry_run=self.dry_run)
         if not self.dry_run:
-            shutil.copy2(script_source, self.rootfs / "tmp/tide-rootfs-config.sh")
-            (self.rootfs / "tmp/tide-rootfs-config.sh").chmod(0o755)
-            branding.stage_custom_scripts(self.rootfs)
+            staging.mkdir(parents=True, exist_ok=True)
+
+        branding = BrandingStage(self.config, self.paths.repo, self.logger)
+        branding.stage_rootfs(staging, self.profile, dry_run=self.dry_run)
+        RustToolsStage(self.paths.repo, self.logger, dry_run=self.dry_run).stage(staging)
+        if not self.dry_run:
+            shutil.copy2(script_source, staging / "tmp/tide-rootfs-config.sh")
+            (staging / "tmp/tide-rootfs-config.sh").chmod(0o755)
+            branding.stage_custom_scripts(staging)
+            run(
+                ["rsync", "-a", "--chown=root:root", f"{staging}/", f"{self.rootfs}/"],
+                self.logger,
+                privileged=True,
+            )
 
         plan = PackagePlan(self.config, self.profile)
         env = {
@@ -87,9 +101,7 @@ class ChrootStage:
                 chroot_run(self.rootfs, ["/bin/bash", script], self.logger, dry_run=self.dry_run)
 
         if not self.dry_run:
-            for relative in self.config.custom_scripts:
-                (self.rootfs / "tmp" / Path(relative).name).unlink(missing_ok=True)
-            (self.rootfs / "tmp/tide-rootfs-config.sh").unlink(missing_ok=True)
+            remove_path(staging, self.logger)
             self.paths.mark_done(
                 "configure",
                 json.dumps(

@@ -16,7 +16,7 @@ from builder.paths import BuildPaths
 
 STAGE_COMMANDS = {
     "bootstrap": ["debootstrap", "chroot", "mount", "umount"],
-    "configure": ["cargo", "chroot", "mount", "umount"],
+    "configure": ["cargo", "chroot", "mount", "umount", "rsync"],
     "iso": ["cargo", "lb", "debootstrap", "grub-mkrescue", "rsync", "mount", "umount", "sha256sum"],
 }
 

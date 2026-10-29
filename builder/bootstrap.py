@@ -7,7 +7,7 @@ import shutil
 from pathlib import Path
 
 from builder.config import TideConfig
-from builder.exec import run
+from builder.exec import remove_path, run
 from builder.logger import BuildLogger
 from builder.packages import PackagePlan
 from builder.paths import BuildPaths
@@ -51,7 +51,7 @@ class BootstrapStage:
         work = self.paths.work.resolve()
         if resolved == work or work not in resolved.parents:
             raise BootstrapError(f"refusing to remove path outside build directory: {resolved}")
-        shutil.rmtree(resolved)
+        remove_path(resolved, self.logger, dry_run=self.dry_run)
 
     def run(self) -> Path:
         self.logger.stage("Stage 2: Bootstrap Debian foundation")
@@ -75,12 +75,27 @@ class BootstrapStage:
         self.logger.info(
             f"Bootstrapping Debian {self.config.codename} ({self.config.architecture}) into {self.rootfs}"
         )
-        run(command, self.logger, privileged=True, dry_run=self.dry_run)
+        run(
+            command,
+            self.logger,
+            env={"DEBIAN_FRONTEND": "noninteractive"},
+            privileged=True,
+            dry_run=self.dry_run,
+        )
 
         if not self.dry_run:
-            sources = self.rootfs / "etc/apt/sources.list"
-            sources.parent.mkdir(parents=True, exist_ok=True)
-            sources.write_text(self.config.sources_list(), encoding="utf-8")
+            # debootstrap creates a root-owned tree; write an unprivileged temp
+            # file and install it with sudo instead of writing into rootfs directly.
+            staging = self.paths.work / "staging"
+            staging.mkdir(parents=True, exist_ok=True)
+            sources_staged = staging / "sources.list"
+            sources_staged.write_text(self.config.sources_list(), encoding="utf-8")
+            run(
+                ["install", "-D", "-m", "0644", str(sources_staged), str(self.rootfs / "etc/apt/sources.list")],
+                self.logger,
+                privileged=True,
+            )
+            sources_staged.unlink(missing_ok=True)
             self.paths.mark_done(
                 "bootstrap",
                 json.dumps(

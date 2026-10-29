@@ -238,7 +238,9 @@ def main(argv: Optional[list[str]] = None) -> int:
                 return 1
             builder.logger.info("All checksums verified")
         elif args.command == "clean":
-            CleanupStage(builder.logger, builder.paths).clean(args.keep_output, args.force)
+            CleanupStage(builder.logger, builder.paths, dry_run=args.dry_run).clean(
+                args.keep_output, args.force
+            )
         return 0
     except (ConfigError, RuntimeError, FileNotFoundError, ValueError) as exc:
         if builder:
