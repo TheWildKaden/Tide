@@ -18,7 +18,6 @@ if [[ "$(id -u)" -ne 0 ]]; then
 fi
 
 CODENAME="${TIDE_CODENAME:-bookworm}"
-VERSION="${TIDE_VERSION:-0.1.0-alpha.1}"
 MIRROR_MAIN="${TIDE_MIRROR_MAIN:-http://deb.debian.org/debian}"
 MIRROR_SECURITY="${TIDE_MIRROR_SECURITY:-http://security.debian.org/debian-security}"
 ARCHIVE_AREAS="${TIDE_ARCHIVE_AREAS:-main contrib non-free non-free-firmware}"

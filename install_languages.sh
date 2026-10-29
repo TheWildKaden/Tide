@@ -30,7 +30,6 @@
 
 set -Eeuo pipefail
 
-readonly SCRIPT_NAME="${0##*/}"
 readonly LOG_PREFIX="[Tide languages]"
 
 INSTALL_QT="${TIDE_INSTALL_QT:-1}"
@@ -54,7 +53,7 @@ on_error() {
 trap on_error ERR
 
 usage() {
-    sed -n '3,36p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '3,29p' "$0" | sed 's/^# \{0,1\}//'
     exit 0
 }
 
@@ -125,7 +124,7 @@ fi
 
 [[ -n "$PM" ]] || die "no supported package manager found (looked for apt-get, dnf, pacman, zypper, apk)"
 
-say "Host: $OS_NAME (id=$OS_ID, package manager=$PM)"
+say "Host: $OS_NAME (id=$OS_ID, like=${OS_LIKE:-none}, package manager=$PM)"
 ((DRY_RUN)) && say "Dry run: no system changes will be made"
 
 declare -a BASE=() PYTHON=() NODE=() QT=() EXTRAS=()
@@ -221,6 +220,9 @@ pkg_install_optional() {
 # ---------------------------------------------------------------------------
 
 if (( ! ASSUME_YES && ! DRY_RUN )); then
+    if [[ ! -t 0 ]]; then
+        die "stdin is not a terminal; pass --yes to install non-interactively"
+    fi
     say "This will install development packages with $PM."
     read -r -p "Continue? [Y/n] " answer
     case "${answer:-Y}" in
@@ -361,6 +363,7 @@ if ((INSTALL_QT)); then
 fi
 
 say "Next steps"
+# shellcheck disable=SC2016  # $HOME is intentionally literal here
 printf '  source "$HOME/.cargo/env"      # if Rust was just installed\n'
 printf '  ./scripts/validate.sh          # run repository checks\n'
 printf '  ./build.sh doctor              # check ISO build dependencies\n'
