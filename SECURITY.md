@@ -26,6 +26,75 @@ The project follows these principles:
 
 Security must never be sacrificed simply to make a feature easier to implement.
 
+## Current security posture (implemented behavior)
+
+This section describes what the code actually does today, including gaps. It supersedes any
+aspirational statement elsewhere in this document where the two disagree.
+
+### Safe command execution
+
+- `tide` and `tidectl` construct external commands as an executable plus an argument vector via
+  `std::process::Command`. They do **not** invoke a shell and do not interpolate user input into a
+  command string.
+- Package names, Flatpak application IDs, AppImage names, and systemd unit names are validated before
+  use. Values starting with `-`, containing control characters, path separators, or shell
+  metacharacters are rejected where relevant.
+- Argument separators (`--`) are used before package lists where the native tool supports them.
+- `LC_ALL=C` is used for stable parsing; APT runs with `DEBIAN_FRONTEND=noninteractive`.
+- Privileged commands use `sudo` only when the process is not already root.
+
+### Package trust
+
+- Tide delegates signature verification to the native backend. It never passes
+  `--allow-unauthenticated` or disables signature checks.
+- The APT adapter uses `apt-get`, `apt-cache`, and `dpkg-query` directly; APT's keyring and
+  `Signed-By` policy remain in force.
+- `tide doctor` reports APT sources that rely on the system keyring rather than a per-source
+  `Signed-By` key. This is informational, not a bypass.
+- **Gap:** DNF5, pacman, apk, and Flatpak adapters parse repository configuration but Tide has not
+  audited each native signature policy.
+- **Gap:** AppImages are installed from local files only, are checked for ELF magic, are never
+  executed during installation, and have **no repository signature**. `tide doctor` warns about this.
+  Users must verify publisher checksums themselves.
+
+### Privileged operations and users
+
+- The default live/installed `tide` user is created with a **locked password** (`passwd --lock`) and
+  belongs to `sudo`, but no passwordless sudoers entry is written. `rootfs-config.sh` removes
+  `/etc/sudoers.d/tide` and validates `/etc/sudoers` with `visudo -c` when present.
+- In-chroot commands run only through reviewed repository scripts. Mounts (`/proc`, `/sys`, `/dev`,
+  `/run`) are set up and torn down by the builder; dry runs skip privileged mounts.
+- Cleanup refuses to remove `/`, the repository root, or the user's home directory, and requires the
+  target to be inside the build directory unless explicitly forced.
+- **Gap:** The live-session login path for the locked `tide` user has not been validated in a booted
+  image.
+
+### Build and release integrity
+
+- The build manifest records git commit, dirty state, package list, tool versions, and artifact
+  SHA-256.
+- Checksum verification rejects malformed digests and path traversal.
+- Validation flags (`boot_tested`, `installer_tested`, `hardware_tested`) default to `false` and are
+  never set by the build.
+- **Gap:** Release artifacts are **checksummed but not signed**. Checksums detect corruption; they do
+  not prove publisher identity.
+- **Gap:** ISO boot, installer execution, and hardware behavior have not been validated. No manifest
+  claims otherwise.
+- **Gap:** Full byte-for-byte reproducibility is not proven.
+
+### First boot and telemetry
+
+- `tide-firstboot.service` runs once, writes `/var/log/tide/firstboot-doctor.json`, and exits. It does
+  not install software, change configuration, or make network calls.
+- Tide has no telemetry, analytics, or hidden network communication.
+
+### CI
+
+- Pull-request workflows use read-only permissions and receive no secrets.
+- The release workflow has `contents: write` only to attach assets to a published release.
+- CI runs formatting, Clippy with `-D warnings`, Rust/Python tests, ShellCheck, and asset parsing, but
+  does not boot an image.
+
 ## 2. Supported Versions
 
 Security fixes are prioritized in this order:
