@@ -315,8 +315,7 @@ fn doctor(
             "system",
             format!(
                 "load average: {}",
-                load.trim()
-                    .split_whitespace()
+                load.split_whitespace()
                     .take(3)
                     .collect::<Vec<_>>()
                     .join(" ")

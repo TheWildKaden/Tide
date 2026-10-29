@@ -12,6 +12,7 @@ from builder.exec import ChrootMounts, chroot_run
 from builder.logger import BuildLogger
 from builder.packages import PackagePlan
 from builder.paths import BuildPaths
+from builder.rusttools import RustToolsStage
 
 
 class ChrootError(RuntimeError):
@@ -52,6 +53,7 @@ class ChrootStage:
 
         branding = BrandingStage(self.config, self.paths.repo, self.logger)
         branding.stage_rootfs(self.rootfs, self.profile, dry_run=self.dry_run)
+        RustToolsStage(self.paths.repo, self.logger, dry_run=self.dry_run).stage(self.rootfs)
         script_source = self.paths.repo / "rootfs-config.sh"
         if not script_source.exists():
             raise ChrootError("rootfs-config.sh is missing")

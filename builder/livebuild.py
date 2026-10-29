@@ -19,6 +19,7 @@ from builder.exec import run
 from builder.logger import BuildLogger
 from builder.packages import PackagePlan
 from builder.paths import BuildPaths
+from builder.rusttools import RustToolsStage
 
 
 class LiveBuildError(RuntimeError):
@@ -77,6 +78,7 @@ class LiveBuildStage:
 
         branding = BrandingStage(self.config, self.paths.repo, self.logger)
         branding.stage_live_includes(self.live_dir, self.profile, dry_run=self.dry_run)
+        RustToolsStage(self.paths.repo, self.logger, dry_run=self.dry_run).stage(self.live_dir / "config/includes.chroot")
 
     def _config_command(self) -> list[str]:
         return [

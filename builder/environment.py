@@ -15,8 +15,8 @@ from builder.paths import BuildPaths
 
 STAGE_COMMANDS = {
     "bootstrap": ["debootstrap", "chroot", "mount", "umount"],
-    "configure": ["chroot", "mount", "umount"],
-    "iso": ["lb", "debootstrap", "grub-mkrescue", "rsync", "mount", "umount", "sha256sum"],
+    "configure": ["cargo", "chroot", "mount", "umount"],
+    "iso": ["cargo", "lb", "debootstrap", "grub-mkrescue", "rsync", "mount", "umount", "sha256sum"],
 }
 
 MIN_FREE_BYTES = 8 * 1024**3
