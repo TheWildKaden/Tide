@@ -17,42 +17,50 @@ REMOTE="origin"
 git remote get-url "$REMOTE" >/dev/null 2>&1 ||
     fail "Git remote 'origin' is missing."
 
-STAMP="$(date '+%Y-%m-%d %H:%M:%S %Z')"
-SAFE_STAMP="$(date '+%Y%m%d-%H%M%S')"
-COMMIT_MSG="Tide sync: ${STAMP}"
-BACKUP_BRANCH="backup/${BRANCH}-${SAFE_STAMP}"
+git config user.name "Tide Sync Bot"
+git config user.email "tide-sync-bot@users.noreply.github.com"
 
-log "Creating backup branch: $BACKUP_BRANCH"
-git branch "$BACKUP_BRANCH"
+while true; do
+    STAMP="$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+    SAFE_STAMP="$(date -u '+%Y%m%d-%H%M%S')"
+    COMMIT_MSG="Tide Sync: ${STAMP}"
+    BACKUP_BRANCH="backup/${BRANCH}-${SAFE_STAMP}"
 
-log "Fetching GitHub changes"
-git fetch "$REMOTE" ||
-    fail "Fetch failed. Local files have not been reset."
+    log "Creating backup branch: $BACKUP_BRANCH"
+    git branch "$BACKUP_BRANCH" ||
+        fail "Could not create backup branch."
 
-UPSTREAM="${REMOTE}/${BRANCH}"
-git rev-parse --verify "$UPSTREAM" >/dev/null 2>&1 ||
-    fail "Remote branch $UPSTREAM does not exist."
+    log "Fetching GitHub changes"
+    git fetch "$REMOTE" ||
+        fail "Fetch failed. Local files have not been reset."
 
-log "Merging remote changes without discarding local files"
-if ! git merge --no-edit "$UPSTREAM"; then
-    fail "Merge conflict or merge failure. Resolve it manually; nothing was force-reset."
-fi
+    UPSTREAM="${REMOTE}/${BRANCH}"
+    git rev-parse --verify "$UPSTREAM" >/dev/null 2>&1 ||
+        fail "Remote branch $UPSTREAM does not exist."
 
-log "Staging repository changes"
-git add -A
+    log "Merging remote changes without resetting local history"
+    if ! git merge --no-edit "$UPSTREAM"; then
+        fail "Merge conflict or merge failure. Resolve it manually before restarting Tide Sync."
+    fi
 
-if ! git diff --cached --quiet; then
-    git -c user.name="Tide Sync Bot" \
-        -c user.email="tide-sync-bot@users.noreply.github.com" \
-        commit -m "$COMMIT_MSG"
-else
-    log "No new changes to commit."
-fi
+    log "Staging repository changes"
+    git add -A
 
-log "Pushing changes to GitHub"
-git push "$REMOTE" "$BRANCH" ||
-    fail "Push rejected. Remote history was not forcibly overwritten."
+    if ! git diff --cached --quiet; then
+        git commit -m "$COMMIT_MSG" ||
+            fail "Commit failed."
+    else
+        log "No new changes to commit."
+    fi
 
-log "Sync complete."
-log "Commit: $COMMIT_MSG"
-log "Backup branch: $BACKUP_BRANCH"
+    log "Pushing changes to GitHub"
+    git push "$REMOTE" "$BRANCH" ||
+        fail "Push rejected. Remote history was not forcibly overwritten."
+
+    log "Sync cycle complete."
+    log "Commit: $COMMIT_MSG"
+    log "Backup branch: $BACKUP_BRANCH"
+    log "Next check in 60 seconds."
+
+    sleep 60
+done
