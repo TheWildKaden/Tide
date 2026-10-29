@@ -13,7 +13,8 @@ pub mod model;
 pub mod paths;
 pub mod util;
 
-pub use backend::{BackendStatus, PackageBackend, RunOptions};
+pub use backend::{PackageBackend, RunOptions};
+pub use backends::BackendStatus;
 pub use error::{Result, TideError};
 pub use exec::{CommandOutput, CommandRunner, SystemRunner};
 pub use model::{

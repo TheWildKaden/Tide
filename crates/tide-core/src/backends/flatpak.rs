@@ -340,20 +340,19 @@ fn parse_columns(output: &str) -> Vec<PackageSummary> {
             if name.is_empty() {
                 return None;
             }
-            let description = parts.next().and_then(|second| {
-                // Search output is application, name, description; remotes/list output
-                // is application, version. Keep the extra column as a description only
-                // when a third column exists.
-                if parts.next().is_some() {
-                    Some(second.trim().to_string())
-                } else {
-                    None
-                }
-            });
+            let second = parts.next().map(str::trim).filter(|value| !value.is_empty());
+            let third = parts.next().map(str::trim).filter(|value| !value.is_empty());
+            // Search output has (application, name, description). List/outdated output
+            // has (application, version).
+            let (version, description) = if third.is_some() {
+                (None, third.map(str::to_string))
+            } else {
+                (second.map(str::to_string), None)
+            };
             Some(PackageSummary {
                 backend: "flatpak".to_string(),
                 name: name.to_string(),
-                version: None,
+                version,
                 description,
                 installed: None,
             })

@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use crate::backend::{unsupported, PackageBackend, RunOptions};
+use crate::backend::{PackageBackend, RunOptions};
 use crate::error::{Result, TideError};
 use crate::exec::CommandRunner;
 use crate::model::{
