@@ -91,7 +91,8 @@ aspirational statement elsewhere in this document where the two disagree.
 ### CI
 
 - Pull-request workflows use read-only permissions and receive no secrets.
-- The release workflow has `contents: write` only to attach assets to a published release.
+- The release workflow has `contents: write` only to create or update a release and attach assets
+  when a `v*` tag is pushed or the workflow is run manually with an existing tag.
 - CI runs formatting, Clippy with `-D warnings`, Rust/Python tests, ShellCheck, and asset parsing, but
   does not boot an image.
 

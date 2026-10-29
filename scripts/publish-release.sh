@@ -35,7 +35,7 @@ while (($#)); do
         --prerelease) PRERELEASE=1 ;;
         --dry-run) DRY_RUN=1 ;;
         -h|--help)
-            sed -n '3,20p' "$0" | sed 's/^# \{0,1\}//'
+            sed -n '4,17p' "$0" | sed 's/^# \{0,1\}//'
             exit 0
             ;;
         -*)

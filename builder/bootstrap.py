@@ -44,7 +44,8 @@ class BootstrapStage:
                     "use --force to replace it or run 'build.sh clean'"
                 )
             self._safe_remove(self.rootfs)
-        self.rootfs.mkdir(parents=True, exist_ok=True)
+        if not self.dry_run:
+            self.rootfs.mkdir(parents=True, exist_ok=True)
 
     def _safe_remove(self, path: Path) -> None:
         resolved = path.resolve()

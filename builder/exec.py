@@ -79,9 +79,16 @@ def remove_path(path: Path, logger: BuildLogger, *, dry_run: bool = False) -> No
         else:
             path.unlink()
         return
-    if path.is_dir() and not path.is_symlink() and os.access(path, os.W_OK):
-        shutil.rmtree(path)
+    try:
+        if path.is_dir() and not path.is_symlink():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
         return
+    except PermissionError:
+        # A partially root-owned build tree cannot be removed unprivileged.
+        # Fall back to an explicit, quoted sudo removal.
+        pass
     run(["rm", "-rf", "--", str(path)], logger, privileged=True)
 
 

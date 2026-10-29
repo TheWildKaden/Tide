@@ -67,8 +67,10 @@ class ChrootStage:
         branding.stage_rootfs(staging, self.profile, dry_run=self.dry_run)
         RustToolsStage(self.paths.repo, self.logger, dry_run=self.dry_run).stage(staging)
         if not self.dry_run:
-            shutil.copy2(script_source, staging / "tmp/tide-rootfs-config.sh")
-            (staging / "tmp/tide-rootfs-config.sh").chmod(0o755)
+            install_dir = staging / "tmp"
+            install_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(script_source, install_dir / "tide-rootfs-config.sh")
+            (install_dir / "tide-rootfs-config.sh").chmod(0o755)
             branding.stage_custom_scripts(staging)
             run(
                 ["rsync", "-a", "--chown=root:root", f"{staging}/", f"{self.rootfs}/"],
@@ -102,6 +104,10 @@ class ChrootStage:
 
         if not self.dry_run:
             remove_path(staging, self.logger)
+            # Do not ship build-time scripts inside the image's /tmp.
+            remove_path(self.rootfs / "tmp/tide-rootfs-config.sh", self.logger)
+            for relative in self.config.custom_scripts:
+                remove_path(self.rootfs / "tmp" / Path(relative).name, self.logger)
             self.paths.mark_done(
                 "configure",
                 json.dumps(
