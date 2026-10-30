@@ -33,6 +33,11 @@ esac
 [[ "$MIRROR_MAIN" == http://* || "$MIRROR_MAIN" == https://* ]] || fail "invalid main mirror"
 [[ "$MIRROR_SECURITY" == http://* || "$MIRROR_SECURITY" == https://* ]] || fail "invalid security mirror"
 
+# Apt and package maintainer scripts create files in /tmp as non-root users.
+# Keep the mode sticky and writable even if the build overlay changed it.
+mkdir -p /tmp /var/tmp
+chmod 1777 /tmp /var/tmp
+
 log "Configuring system identity"
 printf 'tide\n' > /etc/hostname
 cat > /etc/hosts <<'EOF'

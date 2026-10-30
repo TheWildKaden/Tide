@@ -69,6 +69,7 @@ class ChrootStage:
         if not self.dry_run:
             install_dir = staging / "tmp"
             install_dir.mkdir(parents=True, exist_ok=True)
+            install_dir.chmod(0o1777)
             shutil.copy2(script_source, install_dir / "tide-rootfs-config.sh")
             (install_dir / "tide-rootfs-config.sh").chmod(0o755)
             branding.stage_custom_scripts(staging)
