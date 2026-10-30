@@ -17,6 +17,9 @@ class PackagePlan:
         packages = [
             "systemd",
             "systemd-sysv",
+            # systemd's logind provider; required by polkitd (default-logind | logind)
+            # so the base package configuration completes cleanly.
+            "libpam-systemd",
             "sudo",
             "ca-certificates",
             "locales",
