@@ -25,7 +25,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Rust components
         run: |
-          rustup toolchain install stable --component rustfmt clippy --profile minimal
+          rustup toolchain install stable --profile minimal
+          rustup component add rustfmt clippy --toolchain stable
           rustup default stable
       - name: Format
         run: cargo fmt --all -- --check
@@ -52,10 +53,10 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Shell scripts
         run: |
-          for script in build.sh rootfs-config.sh scripts/*.sh assets/firstboot/*.sh; do
+          for script in build.sh install_languages.sh rootfs-config.sh scripts/*.sh assets/firstboot/*.sh; do
             bash -n "$script"
           done
-          shellcheck build.sh rootfs-config.sh scripts/*.sh assets/firstboot/*.sh
+          shellcheck build.sh install_languages.sh rootfs-config.sh scripts/*.sh assets/firstboot/*.sh
       - name: Configuration and assets
         run: |
           python - <<'PY'
