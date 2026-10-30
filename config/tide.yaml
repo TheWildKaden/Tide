@@ -72,7 +72,7 @@ desktop:
         - konsole
         - ark
         - kate
-        - spectacle
+        - kde-spectacle
         - sddm
         - breeze
         - breeze-gtk-theme

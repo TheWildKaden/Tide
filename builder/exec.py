@@ -142,7 +142,9 @@ class ChrootMounts:
             self._mounted = []
 
     def _mount(self, args: Sequence[str], target: Path) -> None:
-        target.mkdir(parents=True, exist_ok=True)
+        # The rootfs tree is root-owned once debootstrap has populated it; mount
+        # points must be created as root before the mount can proceed.
+        run(["mkdir", "-p", "--", str(target)], self.logger, privileged=True, capture=True)
         run(["mount", *args], self.logger, privileged=True, capture=True)
         self._mounted.append(target)
 

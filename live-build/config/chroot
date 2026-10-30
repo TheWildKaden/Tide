@@ -34,7 +34,10 @@ LB_LINUX_PACKAGES="linux-image"
 
 # $LB_SECURITY: enable security updates
 # (Default: true)
-LB_SECURITY="true"
+# Disabled: this live-build release generates Debian security suite paths of the
+# form "<codename>/updates", which do not exist for Debian (the valid suite is
+# "<codename>-security"); the invalid source made the chroot apt update fail.
+LB_SECURITY="false"
 
 # $LB_VOLATILE: enable volatile updates
 # (Default: true)
