@@ -7,7 +7,7 @@ import shutil
 from pathlib import Path
 
 from builder.config import TideConfig
-from builder.exec import remove_path, run
+from builder.exec import CommandError, remove_path, run
 from builder.logger import BuildLogger
 from builder.packages import PackagePlan
 from builder.paths import BuildPaths
@@ -76,13 +76,23 @@ class BootstrapStage:
         self.logger.info(
             f"Bootstrapping Debian {self.config.codename} ({self.config.architecture}) into {self.rootfs}"
         )
-        run(
-            command,
-            self.logger,
-            env={"DEBIAN_FRONTEND": "noninteractive"},
-            privileged=True,
-            dry_run=self.dry_run,
-        )
+        try:
+            run(
+                command,
+                self.logger,
+                env={"DEBIAN_FRONTEND": "noninteractive"},
+                privileged=True,
+                dry_run=self.dry_run,
+            )
+        except CommandError as exc:
+            log_path = self.rootfs / "debootstrap" / "debootstrap.log"
+            detail = ""
+            if log_path.exists():
+                lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+                detail = "\n".join(lines[-40:])
+            raise BootstrapError(
+                f"debootstrap failed: {exc}\n--- debootstrap.log (tail) ---\n{detail}"
+            ) from exc
 
         if not self.dry_run:
             # debootstrap creates a root-owned tree; write an unprivileged temp
