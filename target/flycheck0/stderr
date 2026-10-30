@@ -1,0 +1,4 @@
+    Checking tide-core v0.1.0 (/workspaces/Tide/crates/tide-core)
+    Checking tide-cli v0.1.0 (/workspaces/Tide/crates/tide-cli)
+    Checking tidectl v0.1.0 (/workspaces/Tide/crates/tidectl)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 10.37s
