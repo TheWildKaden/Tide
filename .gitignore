@@ -25,3 +25,6 @@ __pycache__/
 # Temporary bootstrap state
 /tmp/tide-builder/
 /tmp/tide-rootfs-*
+
+# Rust build artifacts
+/target/
