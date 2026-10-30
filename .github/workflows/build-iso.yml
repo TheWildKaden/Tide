@@ -36,7 +36,7 @@ jobs:
       - name: Build Tide ISO
         run: ./scripts/build-iso-in-container.sh --desktop "${{ inputs.desktop }}" all
       - name: Upload ISO artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tide-iso-${{ inputs.desktop }}
           path: |

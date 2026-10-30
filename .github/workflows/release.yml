@@ -58,7 +58,7 @@ jobs:
         run: ./scripts/build-iso-in-container.sh --desktop "$DESKTOP" all
 
       - name: Upload workflow artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tide-release-${{ env.TAG }}
           path: |
