@@ -15,7 +15,7 @@ Tide's build system is a Python orchestrator (`builder/`) around `debootstrap` a
 |---|---|---|
 | Doctor | `./build.sh doctor` | Checks identity, architecture, disk, privileges, required commands |
 | Bootstrap | `./build.sh bootstrap` | `debootstrap` a minimal Debian rootfs |
-| Configure | `./build.sh configure` | Stage branding/tools, run `rootfs-config.sh` in a chroot |
+| Configure | `./build.sh configure` | Stage branding/tools, run `scripts/rootfs-config.sh` in a chroot |
 | Build ISO | `./build.sh build-iso` | Run `lb config` and `lb build`, copy the ISO |
 | Manifest | `./build.sh manifest` | Write SHA-256 checksums and a release manifest |
 | Verify | `./build.sh verify` | Verify all checksum files |
@@ -85,12 +85,12 @@ and suites. State is recorded in `state/bootstrap.json`.
 
 1. Stage branding, KDE defaults, first-boot units, and Calamares config into the rootfs.
 2. Build and stage `tide` and `tidectl` (`builder/rusttools.py`).
-3. Copy `rootfs-config.sh` into the chroot.
+3. Copy `scripts/rootfs-config.sh` into the chroot.
 4. Mount `/proc`, `/sys`, `/dev`, `/run`.
 5. Run the script with `TIDE_*` environment variables.
 6. Unmount and remove temporary scripts.
 
-`rootfs-config.sh` validates package names, installs the configured package set, sets locale and
+`scripts/rootfs-config.sh` validates package names, installs the configured package set, sets locale and
 timezone, creates the `tide` user with a **locked password** and no passwordless sudo, and enables
 NetworkManager.
 

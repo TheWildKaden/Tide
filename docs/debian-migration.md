@@ -28,7 +28,7 @@ code. Detailed per-subsystem analysis is in [DEBIAN_DEPENDENCIES.md](../DEBIAN_D
 1. Debian assumptions live in:
    - `crates/tide-core/src/backends/apt.rs`,
    - `builder/bootstrap.py`, `builder/chroot.py`, `builder/livebuild.py`,
-   - `rootfs-config.sh`, `live-build/`, `config/tide.yaml`.
+   - `scripts/rootfs-config.sh`, `live-build/`, `config/tide.yaml`.
 2. The rest of `tide-core`, `tide-cli`, and `tidectl` must not hard-code Debian-only paths or tools
    outside the APT adapter.
 3. Documentation must say “Debian-based” not “independent” until the image builder, repositories, and

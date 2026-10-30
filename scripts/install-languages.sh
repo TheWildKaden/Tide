@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install_languages.sh — install the language toolchains used by the Tide project.
+# scripts/install-languages.sh — install the language toolchains used by the Tide project.
 #
 # Designed to keep working as the project grows:
 #   * detects the host package manager instead of assuming Debian
@@ -9,7 +9,7 @@
 #   * never pipes unverified data into a privileged shell
 #
 # Usage:
-#   ./install_languages.sh [options]
+#   ./scripts/install-languages.sh [options]
 #
 # Options:
 #   --minimal        Only C/C++, Rust, Python, and Node (no Qt, no extras)

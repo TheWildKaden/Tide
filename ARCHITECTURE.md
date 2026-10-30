@@ -42,7 +42,7 @@ Debian outside the APT backend.
 | `live-build/` | Current image builder configuration | Yes, explicitly replaceable |
 | `assets/` | Branding, desktop defaults, installer, first boot | Mostly no |
 | `config/tide.yaml` | Foundation, packages, profiles, mirrors | Yes |
-| `rootfs-config.sh` | In-chroot system setup | Yes, current foundation |
+| `scripts/rootfs-config.sh` | In-chroot system setup | Yes, current foundation |
 
 ## Package-manager architecture
 
@@ -140,7 +140,7 @@ supported but cleanup refuses unsafe targets.
 
 - `bootstrap` installs a minimal Debian rootfs with a constrained package set.
 - `configure` stages identity, desktop defaults, first-boot units, installer configuration, and the
-  compiled Rust tools, then runs `rootfs-config.sh` in a chroot with `/proc`, `/sys`, `/dev`, and
+  compiled Rust tools, then runs `scripts/rootfs-config.sh` in a chroot with `/proc`, `/sys`, `/dev`, and
   `/run` mounted. Mounts are skipped in dry-run mode.
 - `build-iso` copies the tracked `live-build/` configuration, generates a Tide package list and
   `includes.chroot`, then invokes `lb config` and `lb build`. live-build is replaceable behind this

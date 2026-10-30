@@ -61,7 +61,7 @@ A oneshot service runs once:
 The service runs `tidectl doctor --json`, records the result, and exits. It does not install software,
 change configuration, or make network calls. If `tidectl` is missing, the report records that fact.
 
-The marker is removed by `rootfs-config.sh` during image configuration so the service runs on the
+The marker is removed by `scripts/rootfs-config.sh` during image configuration so the service runs on the
 installed system's first boot.
 
 ## Gaps

@@ -20,7 +20,7 @@ import json
 import sys
 import traceback
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 from builder.bootstrap import BootstrapStage
 from builder.branding import BrandingStage
@@ -158,11 +158,16 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="working directory (default: $TIDE_BUILD_DIR or .tide-build)",
     )
-    parser.add_argument("--desktop", choices=["kde", "xfce", "minimal", "none"], default=None)
-    parser.add_argument("--verbose", action="store_true")
+    parser.add_argument(
+        "--desktop",
+        choices=["kde", "xfce", "minimal", "none"],
+        default=None,
+        help="desktop profile (default: from config/tide.yaml)",
+    )
+    parser.add_argument("--verbose", action="store_true", help="show debug output and tracebacks")
     parser.add_argument("--dry-run", action="store_true", help="print commands without changing the system")
 
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers = parser.add_subparsers(dest="command", metavar="COMMAND")
 
     doctor_parser = subparsers.add_parser("doctor", help="check the build environment")
     doctor_parser.add_argument("--json", action="store_true")
@@ -193,9 +198,46 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _cmd_build_iso(builder: TideBuilder, args: argparse.Namespace) -> None:
+    iso = builder.build_iso()
+    if not args.dry_run:
+        builder.manifest(iso)
+
+
+def _cmd_verify(builder: TideBuilder, args: argparse.Namespace) -> int:
+    errors = verify(builder.paths, args.checksum)
+    for error in errors:
+        builder.logger.error(error)
+    if errors:
+        return 1
+    builder.logger.info("All checksums verified")
+    return 0
+
+
+def _cmd_clean(builder: TideBuilder, args: argparse.Namespace) -> None:
+    CleanupStage(builder.logger, builder.paths, dry_run=args.dry_run).clean(args.keep_output, args.force)
+
+
+# Commands that need a fully initialised TideBuilder. `doctor` and `version`
+# are handled separately because they must work before the build dir exists.
+COMMANDS: dict[str, Callable[[TideBuilder, argparse.Namespace], object]] = {
+    "bootstrap": lambda builder, _args: builder.bootstrap(),
+    "configure": lambda builder, _args: builder.configure(),
+    "build-iso": _cmd_build_iso,
+    "all": lambda builder, _args: builder.all(),
+    "manifest": lambda builder, args: builder.manifest(args.iso),
+    "verify": _cmd_verify,
+    "clean": _cmd_clean,
+}
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.command is None:
+        parser.print_help()
+        print("\nStart with './build.sh doctor', then './build.sh all'.")
+        return 2
     if args.command == "version":
         version_file = REPO / "VERSION"
         print(version_file.read_text(encoding="utf-8").strip() if version_file.exists() else "unknown")
@@ -218,30 +260,8 @@ def main(argv: Optional[list[str]] = None) -> int:
             return 1 if any(check.level == "error" for check in checks) else 0
 
         builder = TideBuilder(args)
-        if args.command == "bootstrap":
-            builder.bootstrap()
-        elif args.command == "configure":
-            builder.configure()
-        elif args.command == "build-iso":
-            iso = builder.build_iso()
-            if not args.dry_run:
-                builder.manifest(iso)
-        elif args.command == "all":
-            builder.all()
-        elif args.command == "manifest":
-            builder.manifest(args.iso)
-        elif args.command == "verify":
-            errors = verify(builder.paths, args.checksum)
-            if errors:
-                for error in errors:
-                    builder.logger.error(error)
-                return 1
-            builder.logger.info("All checksums verified")
-        elif args.command == "clean":
-            CleanupStage(builder.logger, builder.paths, dry_run=args.dry_run).clean(
-                args.keep_output, args.force
-            )
-        return 0
+        result = COMMANDS[args.command](builder, args)
+        return result if isinstance(result, int) else 0
     except (ConfigError, RuntimeError, FileNotFoundError, ValueError) as exc:
         if builder:
             builder.logger.error(f"Build failed: {exc}")

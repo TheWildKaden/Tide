@@ -47,21 +47,16 @@ Requirements: Debian/Ubuntu host, root or sudo, network access, several GiB of f
 `debootstrap` + `live-build` for ISO stages.
 
 ```bash
-# Install build and development dependencies
-./scripts/install-dev-deps.sh
-
-# Check the environment (missing ISO dependencies are reported, not hidden)
-./build.sh doctor
-
-# Build the package manager and system tool
-cargo build --release --workspace --bins
-
-# Run all checks that don't require booting an image
-./scripts/validate.sh
-
-# Build a complete ISO (downloads packages; may take a long time)
-./build.sh all
+make setup      # install build and development dependencies (Debian/Ubuntu)
+make doctor     # check the environment; missing ISO dependencies are reported, not hidden
+make tools      # build the `tide` package manager and `tidectl` system tool
+make test       # run every check that doesn't require booting an image
+make dry-run    # preview a full ISO build without changing anything
+make build      # build a complete ISO (downloads packages; may take a long time)
 ```
+
+Run `make` on its own to list every target. Each target is a thin wrapper around `./build.sh`,
+`cargo`, or a script in `scripts/`, so you can call those directly too.
 
 The primary build command is:
 
@@ -164,8 +159,8 @@ crates/             Rust workspace
   tidectl/          Tide system administration tool
 assets/             Branding, KDE defaults, Calamares, first-boot assets
 live-build/         Isolated Debian live-build configuration
-rootfs-config.sh    In-chroot system configuration
-scripts/            Dependency installer and validation
+scripts/            Dependency installers, validation, release publishing,
+                    and the in-chroot rootfs-config.sh
 tests/              Python builder and asset tests
 docs/               Development, package manager, release, migration, desktop guides
 .github/workflows/  CI, manual ISO build, release build

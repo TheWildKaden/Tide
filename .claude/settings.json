@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(cargo build:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo metadata:*)",
+      "Bash(cargo run --bin tide -- --help)",
+      "Bash(python3 -m unittest:*)",
+      "Bash(make)",
+      "Bash(make help)",
+      "Bash(make test)",
+      "Bash(make lint)",
+      "Bash(make fmt)",
+      "Bash(make tools)",
+      "Bash(make doctor)",
+      "Bash(make dry-run)",
+      "Bash(make verify)",
+      "Bash(./scripts/validate.sh)",
+      "Bash(./build.sh doctor:*)",
+      "Bash(./build.sh version)",
+      "Bash(./build.sh verify:*)",
+      "Bash(./build.sh --dry-run:*)",
+      "Bash(./build.sh --help)",
+      "Bash(shellcheck:*)",
+      "Bash(bash -n:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)"
+    ],
+    "ask": [
+      "Bash(make build)",
+      "Bash(make build-iso)",
+      "Bash(make install:*)",
+      "Bash(make setup)",
+      "Bash(make clean)",
+      "Bash(./build.sh all:*)",
+      "Bash(./build.sh bootstrap:*)",
+      "Bash(./build.sh configure:*)",
+      "Bash(./build.sh build-iso:*)",
+      "Bash(./build.sh clean:*)",
+      "Bash(sudo:*)",
+      "Bash(git push:*)",
+      "Bash(git tag:*)",
+      "Bash(gh release:*)",
+      "Bash(make publish-release:*)",
+      "Bash(./scripts/publish-release.sh:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format.sh" }
+        ]
+      }
+    ]
+  }
+}

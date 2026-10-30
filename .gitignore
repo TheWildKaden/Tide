@@ -28,3 +28,6 @@ __pycache__/
 
 # Rust build artifacts
 /target/
+
+# Claude Code personal settings
+.claude/settings.local.json

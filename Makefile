@@ -1,39 +1,51 @@
-.PHONY: help doctor test lint fmt build build-iso publish-release clean
+.DEFAULT_GOAL := help
+.PHONY: help setup doctor test lint fmt tools install build build-iso dry-run verify publish-release clean
 
-help:
-	@printf '%s\n' \
-		'Tide OS development targets:' \
-		'  make doctor    Check the build environment' \
-		'  make test      Run Python and Rust tests' \
-		'  make lint      Run fmt --check and clippy' \
-		'  make fmt       Format Rust code' \
-		'  make build     Bootstrap, configure, build ISO, write manifest (requires root/network)' \
-		'  make build-iso Build only the live ISO' \
-		'  make publish-release TAG=v0.1.0-alpha.1  Upload output/ to a GitHub release' \
-		'  make clean     Remove local build artifacts'
+PREFIX ?= /usr/local
 
-doctor:
+help: ## Show this help
+	@printf 'Tide OS development targets:\n\n'
+	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*## "} {printf "  make %-16s %s\n", $$1, $$2}'
+
+setup: ## Install build and development dependencies (Debian/Ubuntu, sudo)
+	./scripts/install-dev-deps.sh
+
+doctor: ## Check the build environment
 	./build.sh doctor
 
-test:
+test: ## Run all Python, Rust, shell, and asset checks
 	./scripts/validate.sh
 
-lint:
+lint: ## Run rustfmt --check and clippy
 	cargo fmt --all -- --check
 	cargo clippy --workspace --all-targets -- -D warnings
 
-fmt:
+fmt: ## Format Rust code
 	cargo fmt --all
 
-build:
+tools: ## Build the tide and tidectl binaries (target/release/)
+	cargo build --release --workspace --bins
+
+install: tools ## Install tide and tidectl into $(PREFIX)/bin (PREFIX=/usr/local)
+	install -Dm755 target/release/tide $(DESTDIR)$(PREFIX)/bin/tide
+	install -Dm755 target/release/tidectl $(DESTDIR)$(PREFIX)/bin/tidectl
+
+build: ## Bootstrap, configure, build ISO, write manifest (root/network)
 	./build.sh all
 
-build-iso:
+build-iso: ## Build only the live ISO
 	./build.sh build-iso
 
-publish-release:
+dry-run: ## Show what a full build would do without changing anything
+	./build.sh --dry-run all
+
+verify: ## Verify checksums of artifacts in output/
+	./build.sh verify
+
+publish-release: ## Upload output/ to a GitHub release: TAG=v0.1.0-alpha.1 [CREATE=1]
 	@test -n "$(TAG)" || { echo "usage: make publish-release TAG=v0.1.0-alpha.1 [CREATE=1]"; exit 2; }
 	./scripts/publish-release.sh "$(TAG)" $(if $(filter 1,$(CREATE)),--create)
 
-clean:
+clean: ## Remove local build artifacts
 	./build.sh clean

@@ -53,10 +53,10 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Shell scripts
         run: |
-          for script in build.sh install_languages.sh rootfs-config.sh scripts/*.sh assets/firstboot/*.sh; do
+          for script in build.sh scripts/*.sh assets/firstboot/*.sh; do
             bash -n "$script"
           done
-          shellcheck build.sh install_languages.sh rootfs-config.sh scripts/*.sh assets/firstboot/*.sh
+          shellcheck build.sh scripts/*.sh assets/firstboot/*.sh
       - name: Configuration and assets
         run: |
           python - <<'PY'

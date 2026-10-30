@@ -51,9 +51,9 @@ class ChrootStage:
         if not shutil.which("chroot") and not self.dry_run:
             raise ChrootError("chroot command is not available")
 
-        script_source = self.paths.repo / "rootfs-config.sh"
+        script_source = self.paths.repo / "scripts/rootfs-config.sh"
         if not script_source.exists():
-            raise ChrootError("rootfs-config.sh is missing")
+            raise ChrootError("scripts/rootfs-config.sh is missing")
 
         # debootstrap produces a root-owned rootfs. Assemble everything Tide adds
         # in a user-owned staging tree, then rsync it in as root so file ownership

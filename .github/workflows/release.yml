@@ -54,17 +54,8 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
           df -h
 
-      - name: Install build dependencies
-        run: ./scripts/install-dev-deps.sh
-
-      - name: Environment check
-        run: ./build.sh doctor
-
       - name: Build ISO and manifest
-        run: ./build.sh --desktop "$DESKTOP" all
-
-      - name: Verify checksums
-        run: ./build.sh verify
+        run: ./scripts/build-iso-in-container.sh --desktop "$DESKTOP" all
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4

@@ -187,8 +187,8 @@ class AssetTests(unittest.TestCase):
         import subprocess
 
         for script in [
-            REPO / "install_languages.sh",
-            REPO / "rootfs-config.sh",
+            REPO / "scripts/install-languages.sh",
+            REPO / "scripts/rootfs-config.sh",
             REPO / "assets/firstboot/tide-firstboot.sh",
         ]:
             completed = subprocess.run(["bash", "-n", str(script)], check=False)

@@ -60,7 +60,7 @@ aspirational statement elsewhere in this document where the two disagree.
 ### Privileged operations and users
 
 - The default live/installed `tide` user is created with a **locked password** (`passwd --lock`) and
-  belongs to `sudo`, but no passwordless sudoers entry is written. `rootfs-config.sh` removes
+  belongs to `sudo`, but no passwordless sudoers entry is written. `scripts/rootfs-config.sh` removes
   `/etc/sudoers.d/tide` and validates `/etc/sudoers` with `visudo -c` when present.
 - In-chroot commands run only through reviewed repository scripts. Mounts (`/proc`, `/sys`, `/dev`,
   `/run`) are set up and torn down by the builder; dry runs skip privileged mounts.

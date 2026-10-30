@@ -20,7 +20,7 @@ Install everything:
 Or, in a Codespaces-style environment where you only need language toolchains:
 
 ```bash
-INSTALL_QT=0 ./install_languages.sh
+INSTALL_QT=0 ./scripts/install-languages.sh
 ```
 
 ## First checks
@@ -74,10 +74,10 @@ Tests use temporary directories and never require root. A new stage must expose 
 ## Shell scripts
 
 ```bash
-for script in build.sh rootfs-config.sh scripts/*.sh assets/firstboot/*.sh; do
+for script in build.sh scripts/*.sh assets/firstboot/*.sh; do
     bash -n "$script"
 done
-shellcheck build.sh rootfs-config.sh scripts/*.sh assets/firstboot/*.sh
+shellcheck build.sh scripts/*.sh assets/firstboot/*.sh
 ```
 
 ## Full validation
@@ -110,7 +110,7 @@ privileged steps. Mounts and chroot calls are skipped.
 | Identity/branding | `assets/branding/` |
 | Desktop defaults | `assets/desktop/` |
 | Installer | `assets/calamares/` |
-| In-chroot setup | `rootfs-config.sh` |
+| In-chroot setup | `scripts/rootfs-config.sh` |
 | ISO configuration | `live-build/` |
 | CI | `.github/workflows/` |
 

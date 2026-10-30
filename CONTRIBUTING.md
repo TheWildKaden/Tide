@@ -30,7 +30,7 @@ network access.
 ./scripts/validate.sh           # everything that does not require booting an image
 ```
 
-`install_languages.sh` is a lighter alternative for Codespaces-style environments when you only need
+`scripts/install-languages.sh` is a lighter alternative for Codespaces-style environments when you only need
 language toolchains. It installs Rust, C/C++, Python, Node/TypeScript, and optional Qt6 development
 packages.
 
@@ -51,7 +51,7 @@ packages.
 | `config/tide.yaml` | Foundation, package, desktop, and installer configuration |
 | `assets/` | Branding, KDE defaults, Calamares config, first-boot assets |
 | `live-build/` | Debian live-build configuration (replaceable) |
-| `rootfs-config.sh` | In-chroot configuration |
+| `scripts/rootfs-config.sh` | In-chroot configuration |
 | `scripts/` | Dependency installation and validation |
 | `tests/` | Python builder and asset tests |
 | `docs/` | Long-form documentation |
