@@ -114,7 +114,7 @@ class LiveBuildStage:
             "--iso-application",
             "Tide OS",
             "--iso-publisher",
-            "Tide OS project; https://github.com/Tide-OS/Tide",
+            "Tide OS project; https://github.com/TheWildKaden/Tide",
             "--iso-volume",
             f"Tide OS {self.config.version} {self.config.architecture}",
             "--linux-flavours",

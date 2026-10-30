@@ -5,9 +5,9 @@ shortProductName: Tide OS
 version: 0.1.0-alpha.1
 shortVersion: "0.1"
 bootloaderEntryName: Tide OS
-productUrl: https://github.com/Tide-OS/Tide
-supportUrl: https://github.com/Tide-OS/Tide/issues
-releaseNotesUrl: https://github.com/Tide-OS/Tide/releases
+productUrl: https://github.com/TheWildKaden/Tide
+supportUrl: https://github.com/TheWildKaden/Tide/issues
+releaseNotesUrl: https://github.com/TheWildKaden/Tide/releases
 strings:
     welcome: "Welcome to Tide OS"
     welcomeWithVersion: "Welcome to Tide OS {version}"

@@ -16,7 +16,7 @@ export LB_ARCHIVE_AREAS="${TIDE_AREAS:-main contrib non-free non-free-firmware}"
 export LB_COMPRESSION="${TIDE_COMPRESSION:-xz}"
 export LB_BOOT_APPEND="${TIDE_BOOT_APPEND:-boot=live quiet splash}"
 export LB_ISO_APPLICATION="Tide OS"
-export LB_ISO_PUBLISHER="Tide OS project; https://github.com/Tide-OS/Tide"
+export LB_ISO_PUBLISHER="Tide OS project; https://github.com/TheWildKaden/Tide"
 export LB_ISO_VOLUME="Tide OS ${TIDE_VERSION:-0.1.0-alpha.1}"
 
 exec lb config noauto "$@"

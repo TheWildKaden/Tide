@@ -1,6 +1,6 @@
 [Unit]
 Description=Tide OS first-boot diagnostic
-Documentation=https://github.com/Tide-OS/Tide
+Documentation=https://github.com/TheWildKaden/Tide
 ConditionPathExists=!/var/lib/tide/firstboot-done
 After=local-fs.target
 

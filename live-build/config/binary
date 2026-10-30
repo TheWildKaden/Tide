@@ -83,7 +83,7 @@ LB_ISO_PREPARER="Tide OS build system (live-build)"
 
 # $LB_ISO_PUBLISHER: set iso publisher
 # (Default: Debian Live project; http://live.debian.net/; debian-live@lists.debian.org)
-LB_ISO_PUBLISHER="Tide OS project; https://github.com/Tide-OS/Tide"
+LB_ISO_PUBLISHER="Tide OS project; https://github.com/TheWildKaden/Tide"
 
 # $LB_ISO_VOLUME: set iso volume (max 32 chars)
 # (Default: Debian bookworm $(date +%Y%m%d-%H:%M))

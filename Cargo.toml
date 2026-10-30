@@ -12,7 +12,7 @@ edition = "2021"
 rust-version = "1.82"
 license = "MIT"
 authors = ["Tide OS contributors"]
-repository = "https://github.com/Tide-OS/Tide"
+repository = "https://github.com/TheWildKaden/Tide"
 
 [workspace.dependencies]
 clap = { version = "4.5", features = ["derive", "env"] }
